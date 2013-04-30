@@ -50,8 +50,7 @@ var Scene = new (function() {
         Scene.Obj.moon  = addMoon(settings.diameter.moon, settings.distance.earth, settings.distance.moon); // Moon
         Scene.Obj.sun   = addSun(settings.diameter.sun, 0, 0, 0xFFFF33); // Sun
 
-        addLight(0, 0, 0, 0); // Sunlight
-        addLight(settings.diameter.sun*3, 0, 0, 180); // Makes sun visible
+        addLight(0, 0, 0); // Sunlight
 
         // Stars
         var stars = new THREE.Geometry();
@@ -70,17 +69,16 @@ var Scene = new (function() {
         Scene.Renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(Scene.Renderer.domElement);
     };
-    var addLight = function(posX, posY, posZ, rotX) {
-        var light = new THREE.PointLight(0xffffff, 1);
+    var addLight = function(posX, posY, posZ) {
+        var light = new THREE.PointLight(0xffffff, 2);
         light.position.x = posX;
         light.position.y = posY;
         light.position.z = posZ;
-        light.rotation.x = rotX;
         Scene.Scene.add(light);
     };
     var addEarth = function(diameter, posX, posZ) {
         var radius = diameter / 2;
-        var geometry = new THREE.SphereGeometry(radius, radius / 10, radius / 10);
+        var geometry = new THREE.SphereGeometry(radius, 50, 50);
         var material = new THREE.MeshLambertMaterial({map:THREE.ImageUtils.loadTexture('lib/earth_mrdoob.jpg')});
         var sphere = new THREE.Mesh(geometry, material);
         sphere.position.x = posX;
@@ -95,7 +93,7 @@ var Scene = new (function() {
     };
     var addMoon = function(diameter, posX, posZ) {
         var radius = diameter / 2;
-        var geometry = new THREE.SphereGeometry(radius, radius / 10, radius / 10);
+        var geometry = new THREE.SphereGeometry(radius, 50, 50);
         var material = new THREE.MeshLambertMaterial({map:THREE.ImageUtils.loadTexture('lib/moon_mrdoob.jpg')});
         var sphere = new THREE.Mesh(geometry, material);
         sphere.position.x = posX;
@@ -105,8 +103,8 @@ var Scene = new (function() {
     };
     var addSun = function(diameter, posX, posZ, color) {
         var radius = diameter / 2;
-        var geometry = new THREE.SphereGeometry(radius);
-        var material = new THREE.MeshLambertMaterial({color:color});
+        var geometry = new THREE.SphereGeometry(radius, 50, 50);
+        var material = new THREE.MeshBasicMaterial({color:color});
         var sphere = new THREE.Mesh(geometry, material);
         sphere.position.x = posX;
         sphere.position.z = posZ;
