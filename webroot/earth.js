@@ -23,7 +23,8 @@ var Scene = new (function() {
             earth: 8766,
             moon:  653
         },
-        timeMultiplier: 3600 // 3600 = 1 hour/sec, 1 = real-time
+        timeMultiplier: 3600, // 3600 = 1 hour/sec, 1 = real-time
+        pixelsPerKm: pixelsPerKm
     };
     this.Camera = null;
     this.Scene = null;
@@ -51,6 +52,21 @@ var Scene = new (function() {
 
         addLight(0, 0, 0, 0); // Sunlight
         addLight(settings.diameter.sun*3, 0, 0, 180); // Makes sun visible
+
+        // Stars
+        var stars = new THREE.Geometry();
+        for (var i=0; i < 1000; i++) {
+            var factor = 1e10 * settings.pixelsPerKm;
+            stars.vertices.push(new THREE.Vector3(
+                Scene.Camera.position.x + (1e3 * Math.random() - 5e2) * factor,
+                Scene.Camera.position.y + (1e3 * Math.random() - 5e2) * factor,
+                Scene.Camera.position.z + (1e3 * Math.random() - 5e2) * factor
+            ));
+        }
+        var star_stuff = new THREE.ParticleBasicMaterial();
+        var star_system = new THREE.ParticleSystem(stars, star_stuff);
+        Scene.Scene.add(star_system);
+
         Scene.Renderer = new THREE.WebGLRenderer();
         Scene.Renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(Scene.Renderer.domElement);
@@ -198,10 +214,13 @@ var Animate = new (function() {
         Scene.Obj.moon.position.z = Scene.settings.distance.moon * vectorZ(moonOrbit);
         Scene.Obj.moon.rotation.y = moonOrbit / 360 * 2 * Math.PI + 1.2;
     };
-    var vectorX = function(direction) {
+    var vectorX = this.vectorX = function(direction) {
         return Math.sin(Math.PI * (direction / 180));
     };
-    var vectorZ = function(direction) {
+    var vectorY = this.vectorY = function(direction) {
+        return Math.tan(Math.PI * (direction / 180));
+    };
+    var vectorZ = this.vectorZ = function(direction) {
         return Math.cos(Math.PI * (direction / 180));
     };
     $(this.Init);
