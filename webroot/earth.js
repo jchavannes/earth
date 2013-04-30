@@ -17,12 +17,13 @@ var Scene = new (function() {
         },
         rotation: {
             earth: 24,
-            moon: 653
+            moon:  653
         },
         orbit: {
             earth: 8766,
-            moon: 653
-        }
+            moon:  653
+        },
+        timeMultiplier: 3600 // 3600 = 1 hour/sec, 1 = real-time
     };
     this.Camera = null;
     this.Scene = null;
@@ -35,7 +36,7 @@ var Scene = new (function() {
         Scene.Camera.rotation.y = -1.4; // Rotated back to see moon and earth
         Scene.Scene.add(Scene.Camera); // Add to scene
 
-        if (localStorage && localStorage.camera && false) {
+        if (localStorage && localStorage.camera) {
             try {
                 var camera = JSON.parse(localStorage.camera);
                 Scene.Camera.position.x = camera.posX;
@@ -44,9 +45,9 @@ var Scene = new (function() {
             } catch(e) {}
         }
 
-        Scene.Obj.sun   = addSphere(settings.diameter.sun, 0, 0, 0xFFFF33); // Sun
         Scene.Obj.earth = addEarth(settings.diameter.earth, settings.distance.earth, 0); // Earth
-        Scene.Obj.moon  = addMoon(settings.diameter.moon, settings.distance.earth, settings.distance.moon, 0x333333); // Moon
+        Scene.Obj.moon  = addMoon(settings.diameter.moon, settings.distance.earth, settings.distance.moon); // Moon
+        Scene.Obj.sun   = addSun(settings.diameter.sun, 0, 0, 0xFFFF33); // Sun
 
         addLight(0, 0, 0, 0); // Sunlight
         addLight(settings.diameter.sun*3, 0, 0, 180); // Makes sun visible
@@ -55,7 +56,7 @@ var Scene = new (function() {
         document.body.appendChild(Scene.Renderer.domElement);
     };
     var addLight = function(posX, posY, posZ, rotX) {
-        var light = new THREE.PointLight(0xffffff, 2);
+        var light = new THREE.PointLight(0xffffff, 1);
         light.position.x = posX;
         light.position.y = posY;
         light.position.z = posZ;
@@ -77,17 +78,17 @@ var Scene = new (function() {
         Scene.Scene.add(sphere);
         return sphere;
     };
-    var addMoon = function(diameter, posX, posZ, color) {
+    var addMoon = function(diameter, posX, posZ) {
         var radius = diameter / 2;
         var geometry = new THREE.SphereGeometry(radius, radius / 10, radius / 10);
-        var material = new THREE.MeshLambertMaterial({color:color});
+        var material = new THREE.MeshLambertMaterial({map:THREE.ImageUtils.loadTexture('lib/moon_mrdoob.jpg')});
         var sphere = new THREE.Mesh(geometry, material);
         sphere.position.x = posX;
         sphere.position.z = posZ;
         Scene.Scene.add(sphere);
         return sphere;
     };
-    var addSphere = function(diameter, posX, posZ, color) {
+    var addSun = function(diameter, posX, posZ, color) {
         var radius = diameter / 2;
         var geometry = new THREE.SphereGeometry(radius);
         var material = new THREE.MeshLambertMaterial({color:color});
@@ -131,11 +132,22 @@ var Controls = new (function() {
         else if(e.keyCode == 83) { Controls.keyDown.keyS  = false; }
         else if(e.keyCode == 68) { Controls.keyDown.keyD  = false; }
     });
+    this.reset = function() {
+        Animate.clearInterval();
+        if (localStorage) {
+            localStorage.camera = null;
+        }
+        location.reload();
+    };
 });
 var Animate = new (function() {
     $(window).resize(function() {window.location.href = "";});
+    var interval;
     this.Init = function() {
-        setInterval(update, 1000 / 30);
+        interval = setInterval(update, 1000 / 30);
+    };
+    this.clearInterval = function() {
+        clearInterval(interval);
     };
     var update = function() {
         updateCamera();
@@ -177,14 +189,14 @@ var Animate = new (function() {
         }
     };
     var moonOrbit = 0;
-    var timeMultiplier = 3600; // 1 = realtime, 5 = 5x time, etc
-    var hourToFrameRate = 108000 / timeMultiplier;
+    var hourToFrameRate = 108000 / Scene.settings.timeMultiplier;
     var updateObjects = function() {
         Scene.Obj.earth.rotation.y += 1 / Scene.settings.rotation.earth / hourToFrameRate * 2 * Math.PI;
         moonOrbit += 1 / Scene.settings.orbit.moon / hourToFrameRate * 360;
         if (moonOrbit >= 360) moonOrbit = 0;
-        Scene.Obj.moon.position.x = Scene.settings.distance.earth + Scene.settings.distance.moon * vectorX(moonOrbit);
+        Scene.Obj.moon.position.x = Scene.settings.distance.moon * vectorX(moonOrbit) + Scene.settings.distance.earth;
         Scene.Obj.moon.position.z = Scene.settings.distance.moon * vectorZ(moonOrbit);
+        Scene.Obj.moon.rotation.y = moonOrbit / 360 * 2 * Math.PI + 1.2;
     };
     var vectorX = function(direction) {
         return Math.sin(Math.PI * (direction / 180));
