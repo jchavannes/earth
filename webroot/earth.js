@@ -55,7 +55,7 @@ var Scene = new (function() {
 
         // Stars
         var stars = new THREE.Geometry();
-        for (var i=0; i < 1000; i++) {
+        for (var i = 0; i < 1e4; i++) {
             var factor = 1e10 * settings.pixelsPerKm;
             stars.vertices.push(new THREE.Vector3(
                 Scene.Camera.position.x + (1e3 * Math.random() - 5e2) * factor,
@@ -63,9 +63,8 @@ var Scene = new (function() {
                 Scene.Camera.position.z + (1e3 * Math.random() - 5e2) * factor
             ));
         }
-        var star_stuff = new THREE.ParticleBasicMaterial();
-        var star_system = new THREE.ParticleSystem(stars, star_stuff);
-        Scene.Scene.add(star_system);
+        var material = new THREE.ParticleBasicMaterial();
+        Scene.Scene.add(new THREE.ParticleSystem(stars, material));
 
         Scene.Renderer = new THREE.WebGLRenderer();
         Scene.Renderer.setSize(window.innerWidth, window.innerHeight);

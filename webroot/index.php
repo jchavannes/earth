@@ -11,13 +11,13 @@
     <script type="text/javascript" src="earth.js"></script>
 </head>
 <body>
-    <table class="description" border="1">
-        <tr><th></th><th>Real Time</th><th>Demo Time</th></tr>
-        <tr><td>Earth Rotation</td><td>24 hours</td><td>24 seconds</td></tr>
-        <tr><td>Moon Orbit</td><td>27.21 days</td><td>653 seconds</td></tr>
-        <tr><td>Controls</td><td colspan="2">W, A, S, D, Arrow Keys</td></tr>
-    </table>
     <div class="controls">
+        <table class="description" border="1">
+            <tr><th></th><th>Real Time</th><th>Demo Time</th></tr>
+            <tr><td>Earth Rotation</td><td>24 hours</td><td>24 seconds</td></tr>
+            <tr><td>Moon Orbit</td><td>27.21 days</td><td>653 seconds</td></tr>
+            <tr><td>Controls</td><td colspan="2">W, A, S, D, Arrow Keys</td></tr>
+        </table>
         <input type="button" onclick="Controls.reset();" value="Reset" />
     </div>
 </body>
