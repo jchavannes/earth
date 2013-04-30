@@ -4,7 +4,7 @@ var Scene = new (function() {
         sun:   null,
         moon:  null
     };
-    var pixelsPerKm = 0.1;
+    var pixelsPerKm = 0.05;
     var settings = this.settings = {
         diameter: {
             sun:   pixelsPerKm * 1391000,
@@ -23,7 +23,9 @@ var Scene = new (function() {
             earth: 8766,
             moon:  653
         },
-        timeMultiplier: 3600, // 3600 = 1 hour/sec, 1 = real-time
+        timeMultiplier: 3600, // 3600 = 1 hour/sec, 60 = 1 minute/sec, 1 = real-time
+        moveObjects: true,
+        lockCameraToEarth: false,
         pixelsPerKm: pixelsPerKm
     };
     this.Camera = null;
@@ -55,7 +57,7 @@ var Scene = new (function() {
         // Stars
         var stars = new THREE.Geometry();
         for (var i = 0; i < 1e4; i++) {
-            var factor = 1e10 * settings.pixelsPerKm;
+            var factor = 1e8 * settings.pixelsPerKm;
             stars.vertices.push(new THREE.Vector3(
                 Scene.Camera.position.x + (1e3 * Math.random() - 5e2) * factor,
                 Scene.Camera.position.y + (1e3 * Math.random() - 5e2) * factor,
@@ -68,6 +70,12 @@ var Scene = new (function() {
         Scene.Renderer = new THREE.WebGLRenderer();
         Scene.Renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(Scene.Renderer.domElement);
+        setTimeout(function() {
+            Scene.settings.lockCameraToEarth = true;
+            if (localStorage && localStorage.lockCameraToEarth) {
+                Scene.settings.lockCameraToEarth = localStorage.lockCameraToEarth != "false";
+            }
+        }, 100);
     };
     var addLight = function(posX, posY, posZ) {
         var light = new THREE.PointLight(0xffffff, 2);
@@ -149,8 +157,22 @@ var Controls = new (function() {
         Animate.clearInterval();
         if (localStorage) {
             localStorage.camera = null;
+            localStorage.orbits = null;
+            localStorage.lockCameraToEarth = null;
         }
         location.reload();
+    };
+    this.pause = function() {
+        Scene.settings.moveObjects = false;
+    };
+    this.play = function() {
+        Scene.settings.moveObjects = true;
+    };
+    this.earthLock = function() {
+        Scene.settings.lockCameraToEarth = !Scene.settings.lockCameraToEarth;
+        if (localStorage) {
+            localStorage.lockCameraToEarth = Scene.settings.lockCameraToEarth ? "true" : "false";
+        }
     };
 });
 var Animate = new (function() {
@@ -162,13 +184,14 @@ var Animate = new (function() {
     this.clearInterval = function() {
         clearInterval(interval);
     };
+    this.moveObjects = true;
     var update = function() {
+        if (Scene.settings.moveObjects) updateObjects();
         updateCamera();
-        updateObjects();
         Scene.Renderer.render(Scene.Scene, Scene.Camera);
     };
     var updateCamera = function() {
-        var speed = Scene.settings.diameter.moon;
+        var speed = Scene.settings.diameter.earth;
         var direction = (Scene.Camera.rotation.y % (2 * Math.PI)) / (2 * Math.PI) * 360;
         if (Controls.keyDown.up || Controls.keyDown.keyW) {
             Scene.Camera.position.z -= speed * vectorZ(direction);
@@ -193,31 +216,55 @@ var Animate = new (function() {
             Scene.Camera.rotation.y -= 0.1;
         }
         if (localStorage) {
-            var camera = {
+            localStorage.camera = JSON.stringify({
                 posZ: Scene.Camera.position.z,
                 posX: Scene.Camera.position.x,
                 rotY: Scene.Camera.rotation.y
-            };
-            localStorage.camera = JSON.stringify(camera);
+            });
         }
     };
-    var moonOrbit = 0;
+    var moonOrbit = 90
+      , earthOrbit = 90;
+    (function() {
+        if (localStorage && localStorage.orbits) {
+            try {
+                var orbits = JSON.parse(localStorage.orbits);
+                moonOrbit = orbits.moonOrbit;
+                earthOrbit = orbits.earthOrbit;
+            } catch(e) {}
+        }
+    })();
     var hourToFrameRate = 108000 / Scene.settings.timeMultiplier;
     var updateObjects = function() {
+        if (Scene.settings.lockCameraToEarth) {
+            var startX = Scene.Obj.earth.position.x;
+            var startZ = Scene.Obj.earth.position.z;
+        }
+        earthOrbit += 1 / Scene.settings.orbit.earth / hourToFrameRate * 360;
+        if (earthOrbit >= 360) earthOrbit = 0;
+        Scene.Obj.earth.position.x = Scene.settings.distance.earth * vectorX(earthOrbit);
+        Scene.Obj.earth.position.z = Scene.settings.distance.earth * vectorZ(earthOrbit);
         Scene.Obj.earth.rotation.y += 1 / Scene.settings.rotation.earth / hourToFrameRate * 2 * Math.PI;
+        if (Scene.settings.lockCameraToEarth) {
+            Scene.Camera.position.x -= startX - Scene.Obj.earth.position.x;
+            Scene.Camera.position.z -= startZ - Scene.Obj.earth.position.z;
+        }
         moonOrbit += 1 / Scene.settings.orbit.moon / hourToFrameRate * 360;
         if (moonOrbit >= 360) moonOrbit = 0;
-        Scene.Obj.moon.position.x = Scene.settings.distance.moon * vectorX(moonOrbit) + Scene.settings.distance.earth;
-        Scene.Obj.moon.position.z = Scene.settings.distance.moon * vectorZ(moonOrbit);
+        Scene.Obj.moon.position.x = Scene.settings.distance.moon * vectorX(moonOrbit) + Scene.Obj.earth.position.x;
+        Scene.Obj.moon.position.z = Scene.settings.distance.moon * vectorZ(moonOrbit) + Scene.Obj.earth.position.z;
         Scene.Obj.moon.rotation.y = moonOrbit / 360 * 2 * Math.PI + 1.2;
+        if (localStorage) {
+            localStorage.orbits = JSON.stringify({
+                moonOrbit: moonOrbit,
+                earthOrbit: earthOrbit
+            });
+        }
     };
-    var vectorX = this.vectorX = function(direction) {
+    var vectorX = function(direction) {
         return Math.sin(Math.PI * (direction / 180));
     };
-    var vectorY = this.vectorY = function(direction) {
-        return Math.tan(Math.PI * (direction / 180));
-    };
-    var vectorZ = this.vectorZ = function(direction) {
+    var vectorZ = function(direction) {
         return Math.cos(Math.PI * (direction / 180));
     };
     $(this.Init);

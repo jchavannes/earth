@@ -15,10 +15,14 @@
         <table class="description" border="1">
             <tr><th></th><th>Real Time</th><th>Demo Time</th></tr>
             <tr><td>Earth Rotation</td><td>24 hours</td><td>24 seconds</td></tr>
-            <tr><td>Moon Orbit</td><td>27.21 days</td><td>653 seconds</td></tr>
+            <tr><td>Moon Orbit</td><td>27.21 days</td><td>10 minutes 53 seconds</td></tr>
+            <tr><td>Earth Orbit</td><td>365.26 days</td><td>2 hours 26 minutes 6 seconds</td></tr>
             <tr><td>Controls</td><td colspan="2">W, A, S, D, Arrow Keys</td></tr>
         </table>
         <input type="button" onclick="Controls.reset();" value="Reset" />
+        <input type="button" onclick="Controls.pause();" value="Pause" />
+        <input type="button" onclick="Controls.play();" value="Play" />
+        <input type="button" onclick="Controls.earthLock();" value="Lock to Earth" />
     </div>
 </body>
 </html>
