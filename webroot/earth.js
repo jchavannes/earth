@@ -34,10 +34,15 @@ var Scene = new (function() {
     this.Init = function() {
         Scene.Scene = new THREE.Scene(); // Initialize Scene
         Scene.Camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, settings.distance.earth * 1.5); // Initialize Camera
-        Scene.Camera.position.x = settings.distance.earth * 0.997; // Behind Earth
-        Scene.Camera.position.z = settings.distance.moon * 0.5; // Slightly off center
-        Scene.Camera.rotation.y = -1.4; // Rotated back to see moon and earth
+        Scene.Camera.rotation.y = -1.1; // Rotated back to see moon and earth
         Scene.Scene.add(Scene.Camera); // Add to scene
+
+        Scene.Obj.earth = addEarth(settings.diameter.earth, settings.distance.earth, 0); // Earth
+        Scene.Obj.moon  = addMoon(settings.diameter.moon, settings.distance.earth, settings.distance.moon); // Moon
+        Scene.Obj.sun   = addSun(settings.diameter.sun, 0, 0, 0xFFFF33); // Sun
+
+        Scene.Camera.position.x = Scene.Obj.earth.position.x - settings.distance.moon * 0.1;
+        Scene.Camera.position.z = Scene.Obj.earth.position.z + settings.distance.moon * 0.1;
 
         if (localStorage && localStorage.camera) {
             try {
@@ -47,10 +52,6 @@ var Scene = new (function() {
                 Scene.Camera.rotation.y = camera.rotY;
             } catch(e) {}
         }
-
-        Scene.Obj.earth = addEarth(settings.diameter.earth, settings.distance.earth, 0); // Earth
-        Scene.Obj.moon  = addMoon(settings.diameter.moon, settings.distance.earth, settings.distance.moon); // Moon
-        Scene.Obj.sun   = addSun(settings.diameter.sun, 0, 0, 0xFFFF33); // Sun
 
         addLight(0, 0, 0); // Sunlight
 
@@ -75,6 +76,7 @@ var Scene = new (function() {
             if (localStorage && localStorage.lockCameraToEarth) {
                 Scene.settings.lockCameraToEarth = localStorage.lockCameraToEarth != "false";
             }
+            $('#lockButton').val("Lock to Earth: " + (Scene.settings.lockCameraToEarth ? "On" : "Off"));
         }, 100);
     };
     var addLight = function(posX, posY, posZ) {
@@ -162,17 +164,16 @@ var Controls = new (function() {
         }
         location.reload();
     };
-    this.pause = function() {
-        Scene.settings.moveObjects = false;
-    };
-    this.play = function() {
-        Scene.settings.moveObjects = true;
+    this.playPause = function() {
+        Scene.settings.moveObjects = !Scene.settings.moveObjects;
+        $('#playButton').val("Move Objects: " + (Scene.settings.moveObjects ? "On" : "Off"));
     };
     this.earthLock = function() {
         Scene.settings.lockCameraToEarth = !Scene.settings.lockCameraToEarth;
         if (localStorage) {
             localStorage.lockCameraToEarth = Scene.settings.lockCameraToEarth ? "true" : "false";
         }
+        $('#lockButton').val("Lock to Earth: " + (Scene.settings.lockCameraToEarth ? "On" : "Off"));
     };
 });
 var Animate = new (function() {
