@@ -26,6 +26,7 @@ var Scene = new (function() {
         timeMultiplier: 3600, // 3600 = 1 hour/sec, 60 = 1 minute/sec, 1 = real-time
         moveObjects: true,
         lockCameraToEarth: false,
+        needsCameraReset: true,
         pixelsPerKm: pixelsPerKm
     };
     this.Camera = null;
@@ -37,12 +38,9 @@ var Scene = new (function() {
         Scene.Camera.rotation.y = -1.1; // Rotated back to see moon and earth
         Scene.Scene.add(Scene.Camera); // Add to scene
 
-        Scene.Obj.earth = addEarth(settings.diameter.earth, settings.distance.earth, 0); // Earth
+        Scene.Obj.earth = addEarth(settings.diameter.earth, 0, settings.distance.earth); // Earth
         Scene.Obj.moon  = addMoon(settings.diameter.moon, settings.distance.earth, settings.distance.moon); // Moon
         Scene.Obj.sun   = addSun(settings.diameter.sun, 0, 0, 0xFFFF33); // Sun
-
-        Scene.Camera.position.x = Scene.Obj.earth.position.x - settings.distance.moon * 0.1;
-        Scene.Camera.position.z = Scene.Obj.earth.position.z + settings.distance.moon * 0.1;
 
         if (localStorage && localStorage.camera) {
             try {
@@ -50,6 +48,7 @@ var Scene = new (function() {
                 Scene.Camera.position.x = camera.posX;
                 Scene.Camera.position.z = camera.posZ;
                 Scene.Camera.rotation.y = camera.rotY;
+                Scene.settings.needsCameraReset = false;
             } catch(e) {}
         }
 
@@ -175,9 +174,11 @@ var Controls = new (function() {
         }
         $('#lockButton').val("Lock to Earth: " + (Scene.settings.lockCameraToEarth ? "On" : "Off"));
     };
+    this.backToEarth = function() {
+        Scene.settings.needsCameraReset = true;
+    };
 });
 var Animate = new (function() {
-    $(window).resize(function() {window.location.href = "";});
     var interval;
     this.Init = function() {
         interval = setInterval(update, 1000 / 30);
@@ -185,7 +186,6 @@ var Animate = new (function() {
     this.clearInterval = function() {
         clearInterval(interval);
     };
-    this.moveObjects = true;
     var update = function() {
         if (Scene.settings.moveObjects) updateObjects();
         updateCamera();
@@ -224,8 +224,8 @@ var Animate = new (function() {
             });
         }
     };
-    var moonOrbit = 90
-      , earthOrbit = 90;
+    var moonOrbit = 113.34
+      , earthOrbit = 113.34;
     (function() {
         if (localStorage && localStorage.orbits) {
             try {
@@ -247,6 +247,12 @@ var Animate = new (function() {
         Scene.Obj.earth.position.z = Scene.settings.distance.earth * vectorZ(earthOrbit);
         Scene.Obj.earth.rotation.y += 1 / Scene.settings.rotation.earth / hourToFrameRate * 2 * Math.PI;
         if (Scene.settings.lockCameraToEarth) {
+            if (Scene.settings.needsCameraReset) {
+                Scene.Camera.position.x = Scene.Obj.earth.position.x - Scene.settings.distance.moon * vectorX(earthOrbit) * 0.2;
+                Scene.Camera.position.z = Scene.Obj.earth.position.z - Scene.settings.distance.moon * vectorZ(earthOrbit) * 0.2;
+                Scene.Camera.rotation.y = (earthOrbit / 180 + 1) * Math.PI;
+                Scene.settings.needsCameraReset = false;
+            }
             Scene.Camera.position.x -= startX - Scene.Obj.earth.position.x;
             Scene.Camera.position.z -= startZ - Scene.Obj.earth.position.z;
         }
@@ -261,6 +267,7 @@ var Animate = new (function() {
                 earthOrbit: earthOrbit
             });
         }
+        Graphs.MonthMarker.css({left: (earthOrbit / 3.6) + "%"});
     };
     var vectorX = function(direction) {
         return Math.sin(Math.PI * (direction / 180));
@@ -269,4 +276,37 @@ var Animate = new (function() {
         return Math.cos(Math.PI * (direction / 180));
     };
     $(this.Init);
+    $(window).resize(function() {location.reload();});
+});
+var Graphs = new (function() {
+    this.MonthMarker = null;
+    var monthText = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    var Init = function() {
+        $('body').append("<div class='graphs'><div class='months'></div></div>");
+        var $months = $('.months');
+        var i, g
+          , $month, daysInMonth, width
+          , year = new Date().getYear()
+          , daysInYear = getDaysInYear(year);
+        for (i = 0; i < 12; i++) {
+            $months.append("<div data-month='" + (i + 1) + "'><span>" + monthText[i] + "</span></div>");
+            $month = $("[data-month=" + (i + 1) + "]");
+            daysInMonth = getDaysInMonth(i + 1, year);
+            $month.css({width: (daysInMonth / daysInYear * 100) + "%"});
+            for (g = 0; g < daysInMonth; g++) {
+                $month.append("<p></p>");
+            }
+            width = 100 / daysInMonth;
+            $month.find('p').css({width: width + "%"});
+        }
+        $months.append("<div class='marker'></div>");
+        Graphs.MonthMarker = $('.marker');
+    };
+    var getDaysInMonth = function(m, y) {
+        return /8|3|5|10/.test(--m)?30:m==1?(!(y%4)&&y%100)||!(y%400)?29:28:31;
+    };
+    var getDaysInYear = function(y) {
+        return 365 - 28 + getDaysInMonth(2, y);
+    };
+    $(Init);
 });

@@ -19,9 +19,10 @@
             <tr><td>Earth Orbit</td><td>365.26 days</td><td>2 hours 26 minutes 6 seconds</td></tr>
             <tr><td>Controls</td><td colspan="2">W, A, S, D, Arrow Keys</td></tr>
         </table>
-        <input type="button" id="resetButton" onclick="Controls.reset();" value="Reset" />
         <input type="button" id="playButton" onclick="Controls.playPause();" value="Move Objects: On" />
         <input type="button" id="lockButton" onclick="Controls.earthLock();" value="Lock to Earth: On" />
+        <input type="button" id="backButton" onclick="Controls.backToEarth();" value="Back to Earth" />
+        <input type="button" id="resetButton" onclick="Controls.reset();" value="Reset" />
     </div>
 </body>
 </html>
