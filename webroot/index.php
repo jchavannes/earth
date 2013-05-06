@@ -23,6 +23,9 @@
         <input type="button" id="lockButton" onclick="Controls.earthLock();" value="Lock to Earth: On" />
         <input type="button" id="backButton" onclick="Controls.backToEarth();" value="Back to Earth" />
         <input type="button" id="resetButton" onclick="Controls.reset();" value="Reset" />
+        <br/>
+        Graph:<br/>
+        <span class="lineLegend"></span> = Lunar Cycles
     </div>
 </body>
 </html>

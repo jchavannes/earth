@@ -289,7 +289,7 @@ var Graphs = new (function() {
         var d = new Date((fraction / 360 + Scene.settings.yearsSinceEpoch) * Scene.settings.secondsInYear);
         d = d.toString().split(" ").splice(0,5);
         d[4] = d[4].split(":").splice(0,2).join(":");
-        $date.html(d.join(" "));
+        $date.html(d.join(" ") + " PST");
     };
     var Init = function() {
         $('body').append("<div class='graphs'><div class='date'></div><div class='months'></div></div>");
@@ -300,7 +300,7 @@ var Graphs = new (function() {
           , year = new Date().getYear()
           , daysInYear = getDaysInYear(year);
         for (i = 0; i < 12; i++) {
-            $months.append("<div data-month='" + (i + 1) + "'><span>" + monthText[i] + "</span></div>");
+            $months.append("<div data-month='" + (i + 1) + "'><span>&nbsp;" + monthText[i] + "</span></div>");
             $month = $("[data-month=" + (i + 1) + "]");
             daysInMonth = getDaysInMonth(i + 1, year);
             $month.css({width: (daysInMonth / daysInYear * 100) + "%"});

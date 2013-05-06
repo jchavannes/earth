@@ -8,15 +8,24 @@ body, html {
 }
 .controls {
     position: absolute;
+    color: #f3f3f3;
 }
 .description {
     border: #777 solid 0;
     border-collapse: collapse;
     margin: 5px;
-    color: #f3f3f3;
 }
 .description td {
     padding: 5px;
+}
+.controls .lineLegend {
+    display: inline-block;
+    *display:inline;zoom:1;
+    vertical-align: top;
+    height: 10px;
+    width: 15px;
+    margin: 0 5px;
+    border-bottom: 2px solid #ff0;
 }
 .graphs {
     position: absolute;
@@ -61,7 +70,7 @@ body, html {
 .months .marker {
     position: absolute;
     top: 20px;
-    left: 0;
+    left: -3px;
     height: 45px;
     width: 2px;
     background: #f00;
