@@ -240,6 +240,9 @@ var Animate = new (function() {
             });
         }
     };
+    this.setEarthOrbit = function(day) {
+        earthOrbit = day / Graphs.getDaysInYear(new Date().getYear()) * 360;
+    };
     var moonOrbit = 113.37
       , earthOrbit = 113.37;
     (function() {
@@ -261,7 +264,8 @@ var Animate = new (function() {
         if (earthOrbit >= 360) earthOrbit = 0;
         Scene.Obj.earth.position.x = Scene.settings.distance.earth * vectorX(earthOrbit);
         Scene.Obj.earth.position.z = Scene.settings.distance.earth * vectorZ(earthOrbit);
-        Scene.Obj.earth.rotation.y += 1 / Scene.settings.rotation.earth / hourToFrameRate * 2 * Math.PI;
+        var percent = earthOrbit / 360 * (Graphs.getDaysInYear(new Date().getYear() + 1));
+        Scene.Obj.earth.rotation.y = (percent - parseInt(percent)) * 2 * Math.PI - 5 / 6 * Math.PI;
         if (Scene.settings.lockCameraToEarth) {
             if (Scene.settings.needsCameraReset) {
                 Scene.Camera.position.x = Scene.Obj.earth.position.x - Scene.settings.distance.moon * vectorX(earthOrbit + 45) * 0.15;
@@ -327,7 +331,7 @@ var Graphs = new (function() {
         var d = new Date((fraction / 360 + Scene.settings.yearsSinceEpoch) * Scene.settings.secondsInYear);
         d = d.toString().split(" ").splice(0,5);
         d[4] = d[4].split(":").splice(0,2).join(":");
-        $date.html(d.join(" ") + " PST");
+        $date.html(d.join(" "));
     };
     var Init = function() {
         $('body').append("<div class='graphs'><div class='date'></div><div class='months'></div></div>");
@@ -380,7 +384,7 @@ var Graphs = new (function() {
     var getDaysInMonth = function(m, y) {
         return /8|3|5|10/.test(--m)?30:m==1?(!(y%4)&&y%100)||!(y%400)?29:28:31;
     };
-    var getDaysInYear = function(y) {
+    var getDaysInYear = this.getDaysInYear = function(y) {
         return 365 - 28 + getDaysInMonth(2, y);
     };
     $(Init);
