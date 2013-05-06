@@ -296,17 +296,15 @@ var Animate = new (function() {
         });
         direction = (Scene.Camera.rotation.y % (2 * Math.PI)) / (2 * Math.PI) * -360 - 90;
         var cords = rotateCords(
-            Scene.Camera.position.z / Scene.settings.distance.earth * 99 + 100,
-            Scene.Camera.position.x / Scene.settings.distance.earth * 99 + 100,
-            98,
-            98,
+            Scene.Camera.position.z / Scene.settings.distance.earth * 99,
+            Scene.Camera.position.x / Scene.settings.distance.earth * 99,
             10/365 * 2 * Math.PI
         );
         $camera.css({
             WebkitTransform: 'rotate(' + direction + 'deg)',
             '-moz-transform': 'rotate(' + direction + 'deg)',
-            top: cords[0] - 5,
-            left: cords[1] - 5
+            top: cords[0] + 95,
+            left: cords[1] + 95
         });
     };
     var vectorX = function(direction) {
@@ -315,13 +313,8 @@ var Animate = new (function() {
     var vectorZ = function(direction) {
         return Math.cos(Math.PI * (direction / 180));
     };
-    var rotateCords = function(x, y, xm, ym, a) {
-        var cos = Math.cos,
-            sin = Math.sin,
-            xr = (x - xm) * cos(a) - (y - ym) * sin(a)   + xm,
-            yr = (x - xm) * sin(a) + (y - ym) * cos(a)   + ym;
-
-        return [xr, yr];
+    var rotateCords = function(x, y, a) {
+        return [x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) + y * Math.cos(a)];
     };
     $(this.Init);
     $(window).resize(function() {location.reload();});
