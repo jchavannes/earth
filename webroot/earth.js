@@ -20,8 +20,8 @@ var Scene = new (function() {
             moon:  653
         },
         orbit: {
-            earth: 8766,
-            moon:  653
+            earth: 8766, // 365.26
+            moon:  653 // 27.21
         },
         timeMultiplier: 3600, // 3600 = 1 hour/sec, 60 = 1 minute/sec, 1 = real-time
         moveObjects: true,
@@ -248,9 +248,9 @@ var Animate = new (function() {
         Scene.Obj.earth.rotation.y += 1 / Scene.settings.rotation.earth / hourToFrameRate * 2 * Math.PI;
         if (Scene.settings.lockCameraToEarth) {
             if (Scene.settings.needsCameraReset) {
-                Scene.Camera.position.x = Scene.Obj.earth.position.x - Scene.settings.distance.moon * vectorX(earthOrbit) * 0.2;
-                Scene.Camera.position.z = Scene.Obj.earth.position.z - Scene.settings.distance.moon * vectorZ(earthOrbit) * 0.2;
-                Scene.Camera.rotation.y = (earthOrbit / 180 + 1) * Math.PI;
+                Scene.Camera.position.x = Scene.Obj.earth.position.x - Scene.settings.distance.moon * vectorX(earthOrbit + 45) * 0.15;
+                Scene.Camera.position.z = Scene.Obj.earth.position.z - Scene.settings.distance.moon * vectorZ(earthOrbit + 45) * 0.15;
+                Scene.Camera.rotation.y = (earthOrbit / 180 + 1) * Math.PI + 0.5;
                 Scene.settings.needsCameraReset = false;
             }
             Scene.Camera.position.x -= startX - Scene.Obj.earth.position.x;
@@ -299,8 +299,34 @@ var Graphs = new (function() {
             width = 100 / daysInMonth;
             $month.find('p').css({width: width + "%"});
         }
-        $months.append("<div class='marker'></div>");
+        $months.append("<svg id='sineWave' width='100%' height='120'></svg><div class='marker'></div>");
+        addSineOverlay();
         Graphs.MonthMarker = $('.marker');
+    };
+    var addSineOverlay = function() {
+        var svg = document.getElementById('sineWave');
+        var width = parseInt($(window).width());
+        var totalCycles = 365.26 / 29.53;
+        var maxX = width / totalCycles;
+        var maxY = 20;
+        var globalOffsetLeft = -0.808 * (width / totalCycles);
+        var cycles, paths, angle, i, x, y, path, offsetLeft;
+        for (cycles = 1; cycles <= totalCycles + 2; cycles++) {
+            paths = [];
+            offsetLeft = globalOffsetLeft + maxX * (cycles - 1);
+            for (i = 0; i <= maxX; i++) {
+                angle = (i / maxX) * Math.PI * 2;
+                x = offsetLeft + angle * maxX / (Math.PI * 2);
+                y = Math.sin(angle) * (maxY / 2) + (maxY / 2);
+                paths.push((i == 0 ? 'M' : 'L') + x + ',' + y);
+            }
+            path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute('d', paths.join(' ') );
+            path.style.stroke = '#0f0';
+            path.style.fill = 'none';
+            svg.appendChild(path);
+        }
+
     };
     var getDaysInMonth = function(m, y) {
         return /8|3|5|10/.test(--m)?30:m==1?(!(y%4)&&y%100)||!(y%400)?29:28:31;
