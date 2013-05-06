@@ -167,17 +167,31 @@ var Controls = new (function() {
     };
     this.playPause = function() {
         Scene.settings.moveObjects = !Scene.settings.moveObjects;
-        $('#playButton').val("Move Objects: " + (Scene.settings.moveObjects ? "On" : "Off"));
+        setButtonStatuses();
     };
     this.earthLock = function() {
         Scene.settings.lockCameraToEarth = !Scene.settings.lockCameraToEarth;
         if (localStorage) {
             localStorage.lockCameraToEarth = Scene.settings.lockCameraToEarth ? "true" : "false";
         }
-        $('#lockButton').val("Lock to Earth: " + (Scene.settings.lockCameraToEarth ? "On" : "Off"));
+        setButtonStatuses();
     };
     this.backToEarth = function() {
         Scene.settings.needsCameraReset = true;
+        Scene.settings.lockCameraToEarth = true;
+        setButtonStatuses();
+    };
+    this.visitTheSun = function() {
+        Scene.Camera.position.x = -Scene.settings.diameter.sun;
+        Scene.Camera.position.z = Scene.settings.diameter.sun;
+        Scene.settings.lockCameraToEarth = false;
+        setButtonStatuses();
+    };
+    var $lockButton, $playButton;
+    var setButtonStatuses = function() {
+        if (!$lockButton || !$playButton) ($lockButton = $('#lockButton')) && ($playButton = $('#playButton'));
+        $lockButton.val("Lock to Earth: " + (Scene.settings.lockCameraToEarth ? "On" : "Off"));
+        $playButton.val("Move Objects: " + (Scene.settings.moveObjects ? "On" : "Off"));
     };
 });
 var Animate = new (function() {
