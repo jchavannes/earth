@@ -101,3 +101,53 @@ h2 {
     width: 2px;
     background: #f00;
 }
+.orbit {
+    background: url(imgs.png);
+    width: 200px;
+    height: 200px;
+    position: absolute;
+    bottom: 60px;
+    right: 20px;
+    overflow: hidden;
+}
+.orbit .earth {
+    background: url(imgs.png) -200px -10px;
+    width: 4px;
+    height: 4px;
+    position: absolute;
+    top: -4px;
+    left: -4px;
+}
+.orbit .camera {
+    background: url(imgs.png) -200px 0;
+    width: 10px;
+    height: 10px;
+    position: absolute;
+    top: -10px;
+    left: -10px;
+}
+.orbit .jun, .orbit .sept, .orbit .dec, .orbit .mar {
+    color: #f3f3f3;
+    position: absolute;
+    width: 44px;
+    text-align: center;
+    white-space: nowrap;
+}
+.orbit .jun {
+    left: 78px;
+    top: 5px;
+}
+.orbit .sept {
+    left: 5px;
+    top: 92px;
+    text-align: left;
+}
+.orbit .dec {
+    left: 78px;
+    bottom: 5px;
+}
+.orbit .mar {
+    right: 5px;
+    top: 92px;
+    text-align: right;
+}

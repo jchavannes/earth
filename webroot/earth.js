@@ -74,10 +74,8 @@ var Scene = new (function() {
         document.body.appendChild(Scene.Renderer.domElement);
         setTimeout(function() {
             Scene.settings.lockCameraToEarth = true;
-            if (localStorage && localStorage.lockCameraToEarth) {
-                Scene.settings.lockCameraToEarth = localStorage.lockCameraToEarth != "false";
-            }
-            $('#lockButton').val("Lock to Earth: " + (Scene.settings.lockCameraToEarth ? "On" : "Off"));
+            if (localStorage && localStorage.lockCameraToEarth) Scene.settings.lockCameraToEarth = localStorage.lockCameraToEarth != "false";
+            Controls.setButtonStatuses();
         }, 100);
     };
     var addLight = function(posX, posY, posZ) {
@@ -171,24 +169,25 @@ var Controls = new (function() {
     };
     this.earthLock = function() {
         Scene.settings.lockCameraToEarth = !Scene.settings.lockCameraToEarth;
-        if (localStorage) {
-            localStorage.lockCameraToEarth = Scene.settings.lockCameraToEarth ? "true" : "false";
-        }
+        if (localStorage) localStorage.lockCameraToEarth = Scene.settings.lockCameraToEarth ? "true" : "false";
         setButtonStatuses();
     };
     this.backToEarth = function() {
         Scene.settings.needsCameraReset = true;
         Scene.settings.lockCameraToEarth = true;
+        if (localStorage) localStorage.lockCameraToEarth = Scene.settings.lockCameraToEarth ? "true" : "false";
         setButtonStatuses();
     };
     this.visitTheSun = function() {
         Scene.Camera.position.x = -Scene.settings.diameter.sun;
         Scene.Camera.position.z = Scene.settings.diameter.sun;
+        Scene.Camera.rotation.y = 5.54;
         Scene.settings.lockCameraToEarth = false;
+        if (localStorage) localStorage.lockCameraToEarth = Scene.settings.lockCameraToEarth ? "true" : "false";
         setButtonStatuses();
     };
     var $lockButton, $playButton;
-    var setButtonStatuses = function() {
+    var setButtonStatuses = this.setButtonStatuses = function() {
         if (!$lockButton || !$playButton) ($lockButton = $('#lockButton')) && ($playButton = $('#playButton'));
         $lockButton.val("Lock to Earth: " + (Scene.settings.lockCameraToEarth ? "On" : "Off"));
         $playButton.val("Move Objects: " + (Scene.settings.moveObjects ? "On" : "Off"));
@@ -206,6 +205,7 @@ var Animate = new (function() {
         if (Scene.settings.moveObjects) updateObjects();
         updateCamera();
         Scene.Renderer.render(Scene.Scene, Scene.Camera);
+        setOrbitImgs();
     };
     var updateCamera = function() {
         var speed = Scene.settings.diameter.earth;
@@ -286,11 +286,42 @@ var Animate = new (function() {
         Graphs.MonthMarker.css({left: (earthOrbit / 3.6) + "%"});
         Graphs.setDate(earthOrbit);
     };
+    var $earth, $camera;
+    var setOrbitImgs = function() {
+        if (!$earth || !$camera) ($earth = $('.orbit .earth')) && ($camera = $('.orbit .camera'));
+        var direction = earthOrbit + (10 / 365 * 360);
+        $earth.css({
+            left: vectorX(direction) * 99 + 98,
+            top: vectorZ(direction) * 99 + 98
+        });
+        direction = (Scene.Camera.rotation.y % (2 * Math.PI)) / (2 * Math.PI) * -360 - 90;
+        var cords = rotateCords(
+            Scene.Camera.position.z / Scene.settings.distance.earth * 99 + 100,
+            Scene.Camera.position.x / Scene.settings.distance.earth * 99 + 100,
+            98,
+            98,
+            10/365 * 2 * Math.PI
+        );
+        $camera.css({
+            WebkitTransform: 'rotate(' + direction + 'deg)',
+            '-moz-transform': 'rotate(' + direction + 'deg)',
+            top: cords[0] - 5,
+            left: cords[1] - 5
+        });
+    };
     var vectorX = function(direction) {
         return Math.sin(Math.PI * (direction / 180));
     };
     var vectorZ = function(direction) {
         return Math.cos(Math.PI * (direction / 180));
+    };
+    var rotateCords = function(x, y, xm, ym, a) {
+        var cos = Math.cos,
+            sin = Math.sin,
+            xr = (x - xm) * cos(a) - (y - ym) * sin(a)   + xm,
+            yr = (x - xm) * sin(a) + (y - ym) * cos(a)   + ym;
+
+        return [xr, yr];
     };
     $(this.Init);
     $(window).resize(function() {location.reload();});

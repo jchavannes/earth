@@ -26,8 +26,8 @@
         Graph:<br/>
         <span class="lineLegend"></span> = Lunar Cycles<br/>
         <br/>
-        <input type="button" id="playButton" onclick="Controls.playPause();" value="Move Objects: On" /><br/>
-        <input type="button" id="lockButton" onclick="Controls.earthLock();" value="Lock to Earth: On" /><br/>
+        <input type="button" id="playButton" onclick="Controls.playPause();" value="Move Objects" /><br/>
+        <input type="button" id="lockButton" onclick="Controls.earthLock();" value="Lock to Earth" /><br/>
         <input type="button" id="earthButton" onclick="Controls.backToEarth();" value="Back to Earth" /><br/>
         <input type="button" id="sunButton" onclick="Controls.visitTheSun();" value="Visit the Sun" /><br/>
         <input type="button" id="resetButton" onclick="Controls.reset();" value="Reset" /><br/>
@@ -49,6 +49,14 @@
             <tr><td>Diameter of Sun</td><td>1,391,000 km</td></tr>
             <tr><td>Diameter of Moon</td><td>3,474 km</td></tr>
         </table>
+    </div>
+    <div class='orbit'>
+        <span class='jun'>Summer</span>
+        <span class='sept'>Fall</span>
+        <span class='dec'>Winter</span>
+        <span class='mar'>Spring</span>
+        <span class='earth'></span>
+        <span class='camera'></span>
     </div>
 </body>
 </html>
