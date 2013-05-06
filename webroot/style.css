@@ -23,9 +23,12 @@ body, html {
     bottom: 0;
     left: 0;
     width: 100%;
-}
-.months {
     color: #fff;
+    font-size: 12px;
+}
+.graphs .date {
+    height: 20px;
+    color: #0f0;
 }
 .months div {
     display: inline-block;
@@ -52,12 +55,12 @@ body, html {
 .months svg {
     position: absolute;
     width: 100%;
-    top: 18px;
+    top: 35px;
     left: 0;
 }
 .months .marker {
     position: absolute;
-    top: 0;
+    top: 20px;
     left: 0;
     height: 45px;
     width: 2px;

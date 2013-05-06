@@ -27,6 +27,8 @@ var Scene = new (function() {
         moveObjects: true,
         lockCameraToEarth: false,
         needsCameraReset: true,
+        secondsInYear: 60*60*24*365.26*1000,
+        yearsSinceEpoch: 43,
         pixelsPerKm: pixelsPerKm
     };
     this.Camera = null;
@@ -224,8 +226,8 @@ var Animate = new (function() {
             });
         }
     };
-    var moonOrbit = 113.34
-      , earthOrbit = 113.34;
+    var moonOrbit = 113.37
+      , earthOrbit = 113.37;
     (function() {
         if (localStorage && localStorage.orbits) {
             try {
@@ -268,6 +270,7 @@ var Animate = new (function() {
             });
         }
         Graphs.MonthMarker.css({left: (earthOrbit / 3.6) + "%"});
+        Graphs.setDate(earthOrbit);
     };
     var vectorX = function(direction) {
         return Math.sin(Math.PI * (direction / 180));
@@ -281,8 +284,16 @@ var Animate = new (function() {
 var Graphs = new (function() {
     this.MonthMarker = null;
     var monthText = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    var $date;
+    this.setDate = function(fraction) {
+        var d = new Date((fraction / 360 + Scene.settings.yearsSinceEpoch) * Scene.settings.secondsInYear);
+        d = d.toString().split(" ").splice(0,5);
+        d[4] = d[4].split(":").splice(0,2).join(":");
+        $date.html(d.join(" "));
+    };
     var Init = function() {
-        $('body').append("<div class='graphs'><div class='months'></div></div>");
+        $('body').append("<div class='graphs'><div class='date'></div><div class='months'></div></div>");
+        $date = $('.date');
         var $months = $('.months');
         var i, g
           , $month, daysInMonth, width
@@ -309,7 +320,7 @@ var Graphs = new (function() {
         var totalCycles = 365.26 / 29.53;
         var maxX = width / totalCycles;
         var maxY = 20;
-        var globalOffsetLeft = -0.808 * (width / totalCycles);
+        var globalOffsetLeft = -0.85 * (width / totalCycles);
         var cycles, paths, angle, i, x, y, path, offsetLeft;
         for (cycles = 1; cycles <= totalCycles + 2; cycles++) {
             paths = [];
@@ -322,7 +333,7 @@ var Graphs = new (function() {
             }
             path = document.createElementNS("http://www.w3.org/2000/svg", "path");
             path.setAttribute('d', paths.join(' ') );
-            path.style.stroke = '#0f0';
+            path.style.stroke = '#ff0';
             path.style.fill = 'none';
             svg.appendChild(path);
         }
