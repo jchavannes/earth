@@ -27,7 +27,7 @@ var Scene = new (function() {
         moveObjects: true,
         lockCameraToEarth: false,
         needsCameraReset: true,
-        secondsInYear: 60*60*24*365.26*1000,
+        secondsInYear: 60*60*24*365*1000,
         yearsSinceEpoch: 43,
         pixelsPerKm: pixelsPerKm
     };
