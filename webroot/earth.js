@@ -254,13 +254,15 @@ var Animate = new (function() {
             } catch(e) {}
         }
     })();
-    var hourToFrameRate = 108000 / Scene.settings.timeMultiplier;
     var updateObjects = function() {
+        var hourToFrameRate = 108000 / Scene.settings.timeMultiplier;
         if (Scene.settings.lockCameraToEarth) {
             var startX = Scene.Obj.earth.position.x;
             var startZ = Scene.Obj.earth.position.z;
         }
-        earthOrbit += 1 / Scene.settings.orbit.earth / hourToFrameRate * 360;
+        var rotation = 1 / Scene.settings.orbit.earth / hourToFrameRate * 360;
+        earthOrbit += rotation;
+        rotation = rotation / 360 * 2 * Math.PI;
         if (earthOrbit >= 360) earthOrbit = 0;
         Scene.Obj.earth.position.x = Scene.settings.distance.earth * vectorX(earthOrbit);
         Scene.Obj.earth.position.z = Scene.settings.distance.earth * vectorZ(earthOrbit);
@@ -275,6 +277,14 @@ var Animate = new (function() {
             }
             Scene.Camera.position.x -= startX - Scene.Obj.earth.position.x;
             Scene.Camera.position.z -= startZ - Scene.Obj.earth.position.z;
+            var difference = {
+                x: Scene.Camera.position.x - Scene.Obj.earth.position.x,
+                z: Scene.Camera.position.z - Scene.Obj.earth.position.z
+            };
+            var cords = rotateCords(difference.x, difference.z, -rotation);
+            Scene.Camera.position.x = Scene.Obj.earth.position.x + cords.x;
+            Scene.Camera.position.z = Scene.Obj.earth.position.z + cords.z;
+            Scene.Camera.rotation.y += rotation;
         }
         moonOrbit += 1 / Scene.settings.orbit.moon / hourToFrameRate * 360;
         if (moonOrbit >= 360) moonOrbit = 0;
@@ -307,8 +317,8 @@ var Animate = new (function() {
         $camera.css({
             WebkitTransform: 'rotate(' + direction + 'deg)',
             '-moz-transform': 'rotate(' + direction + 'deg)',
-            top: cords[0] + 95,
-            left: cords[1] + 95
+            top: cords.x + 95,
+            left: cords.z + 95
         });
     };
     var vectorX = function(direction) {
@@ -317,8 +327,11 @@ var Animate = new (function() {
     var vectorZ = function(direction) {
         return Math.cos(Math.PI * (direction / 180));
     };
-    var rotateCords = function(x, y, a) {
-        return [x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) + y * Math.cos(a)];
+    var rotateCords = function(x, z, a) {
+        return {
+            x: x * Math.cos(a) - z * Math.sin(a),
+            z: x * Math.sin(a) + z * Math.cos(a)
+        };
     };
     $(this.Init);
     $(window).resize(function() {location.reload();});
