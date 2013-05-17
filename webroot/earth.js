@@ -164,6 +164,18 @@ var Controls = new (function() {
         }
         location.reload();
     };
+    this.timeToggle = function() {
+        if (Scene.settings.timeMultiplier == 1) {
+            Scene.settings.timeMultiplier = 3600;
+        }
+        else if (Scene.settings.timeMultiplier == 3600) {
+            Scene.settings.timeMultiplier = 86400;
+        }
+        else {
+            Scene.settings.timeMultiplier = 1;
+        }
+        setButtonStatuses();
+    };
     this.playPause = function() {
         Scene.settings.moveObjects = !Scene.settings.moveObjects;
         setButtonStatuses();
@@ -187,11 +199,12 @@ var Controls = new (function() {
         if (localStorage) localStorage.lockCameraToEarth = Scene.settings.lockCameraToEarth ? "true" : "false";
         setButtonStatuses();
     };
-    var $lockButton, $playButton;
+    var $lockButton, $playButton, $speedButton;
     var setButtonStatuses = this.setButtonStatuses = function() {
-        if (!$lockButton || !$playButton) ($lockButton = $('#lockButton')) && ($playButton = $('#playButton'));
+        if (!$lockButton || !$playButton || $speedButton) ($lockButton = $('#lockButton')) && ($playButton = $('#playButton')) && ($speedButton = $('#speedButton'));
         $lockButton.val("Lock to Earth: " + (Scene.settings.lockCameraToEarth ? "On" : "Off"));
         $playButton.val("Move Objects: " + (Scene.settings.moveObjects ? "On" : "Off"));
+        $speedButton.val("Speed: " + (Scene.settings.timeMultiplier == 1 ? "Real-time" : (Scene.settings.timeMultiplier == 3600 ? "1 sec = 1 hour" : "1 sec = 1 day")));
     };
 });
 var Animate = new (function() {
@@ -255,7 +268,6 @@ var Animate = new (function() {
         var orbit;
         if (typeof day == "undefined") {
             var now = new Date();
-            console.log(now);
             var start = new Date(now.getFullYear(), 0, 0).getTime();
             var end = new Date(now.getFullYear() + 1, 0, 0).getTime() + 0.26 * 60 * 60 * Scene.settings.rotation.earth;
             orbit = (now.getTime() - start) / (end - start) * 360;
@@ -274,7 +286,6 @@ var Animate = new (function() {
         var lastFullMoon = new Date(phases[i-1]);
         moonOrbit = (now - lastFullMoon) / (nextFullMoon - lastFullMoon) * 360 + earthOrbit;
         if (moonOrbit > 360) moonOrbit -= 360;
-        console.log(moonOrbit);
     };
     var phases = [
         "2013-01-27 04:40:28",
@@ -301,7 +312,12 @@ var Animate = new (function() {
         var rotation = 1 / Scene.settings.orbit.earth / hourToFrameRate * 360;
         earthOrbit += rotation;
         rotation = rotation / 360 * 2 * Math.PI;
-        if (earthOrbit >= 360) earthOrbit = 0;
+        if (earthOrbit >= 360) {
+            earthOrbit = 0;
+            setTimeout(function() {
+                Controls.reset();
+            }, 1);
+        }
         Scene.Obj.earth.position.x = Scene.settings.distance.earth * vectorX(earthOrbit);
         Scene.Obj.earth.position.z = Scene.settings.distance.earth * vectorZ(earthOrbit);
         Scene.Obj.earth.rotation.y = earthOrbit / 360 * 2 * Math.PI * Scene.settings.orbit.earth / Scene.settings.rotation.earth;
