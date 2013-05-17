@@ -16,14 +16,14 @@ var Scene = new (function() {
             moon:  pixelsPerKm * 384400
         },
         rotation: {
-            earth: 24,
+            earth: 23.934, // The earth rotates 366.26 times in 365.26 days
             moon:  653
         },
         orbit: {
             earth: 8766, // 365.26
             moon:  653 // 27.21
         },
-        timeMultiplier: 3600, // 3600 = 1 hour/sec, 60 = 1 minute/sec, 1 = real-time
+        timeMultiplier: 1, // 3600 = 1 hour/sec, 60 = 1 minute/sec, 1 = real-time
         moveObjects: true,
         lockCameraToEarth: false,
         needsCameraReset: true,
@@ -55,6 +55,7 @@ var Scene = new (function() {
         }
 
         addLight(0, 0, 0); // Sunlight
+        Scene.Scene.add(new THREE.AmbientLight(0x111111));  // Ambient
 
         // Stars
         var stars = new THREE.Geometry();
@@ -196,6 +197,16 @@ var Controls = new (function() {
 var Animate = new (function() {
     var interval;
     this.Init = function() {
+        Animate.setEarthOrbit();
+        (function() {
+            if (localStorage && localStorage.orbits) {
+                try {
+                    var orbits = JSON.parse(localStorage.orbits);
+                    moonOrbit = orbits.moonOrbit;
+                    earthOrbit = orbits.earthOrbit;
+                } catch(e) {}
+            }
+        })();
         interval = setInterval(update, 1000 / 30);
     };
     this.clearInterval = function() {
@@ -241,19 +252,46 @@ var Animate = new (function() {
         }
     };
     this.setEarthOrbit = function(day) {
-        earthOrbit = day / Graphs.getDaysInYear(new Date().getYear()) * 360;
+        var orbit;
+        if (typeof day == "undefined") {
+            var now = new Date();
+            console.log(now);
+            var start = new Date(now.getFullYear(), 0, 0).getTime();
+            var end = new Date(now.getFullYear() + 1, 0, 0).getTime() + 0.26 * 60 * 60 * Scene.settings.rotation.earth;
+            orbit = (now.getTime() - start) / (end - start) * 360;
+        }
+        else {
+            orbit = day / (Graphs.getDaysInYear(new Date().getYear() + 0.26)) * 360;
+        }
+        earthOrbit = orbit;
+        var nextFullMoon;
+        for (var i = 0; i < phases.length; i++) {
+            nextFullMoon = new Date(phases[i]);
+            if (nextFullMoon > now) {
+                break;
+            }
+        }
+        var lastFullMoon = new Date(phases[i-1]);
+        moonOrbit = (now - lastFullMoon) / (nextFullMoon - lastFullMoon) * 360 + earthOrbit;
+        if (moonOrbit > 360) moonOrbit -= 360;
+        console.log(moonOrbit);
     };
+    var phases = [
+        "2013-01-27 04:40:28",
+        "2013-02-25 20:28:51",
+        "2013-03-27 09:30:20",
+        "2013-04-25 19:59:57",
+        "2013-05-25 04:27:03",
+        "2013-06-23 11:33:38",
+        "2013-07-22 18:16:32",
+        "2013-08-21 01:45:06",
+        "2013-09-19 11:12:38",
+        "2013-10-18 23:37:36",
+        "2013-11-17 15:16:30",
+        "2013-11-17 15:16:30"
+    ];
     var moonOrbit = 113.37
       , earthOrbit = 113.37;
-    (function() {
-        if (localStorage && localStorage.orbits) {
-            try {
-                var orbits = JSON.parse(localStorage.orbits);
-                moonOrbit = orbits.moonOrbit;
-                earthOrbit = orbits.earthOrbit;
-            } catch(e) {}
-        }
-    })();
     var updateObjects = function() {
         var hourToFrameRate = 108000 / Scene.settings.timeMultiplier;
         if (Scene.settings.lockCameraToEarth) {
@@ -266,13 +304,12 @@ var Animate = new (function() {
         if (earthOrbit >= 360) earthOrbit = 0;
         Scene.Obj.earth.position.x = Scene.settings.distance.earth * vectorX(earthOrbit);
         Scene.Obj.earth.position.z = Scene.settings.distance.earth * vectorZ(earthOrbit);
-        var percent = earthOrbit / 360 * (Graphs.getDaysInYear(new Date().getYear() + 1));
-        Scene.Obj.earth.rotation.y = (percent - parseInt(percent)) * 2 * Math.PI - 5 / 6 * Math.PI;
+        Scene.Obj.earth.rotation.y = earthOrbit / 360 * 2 * Math.PI * Scene.settings.orbit.earth / Scene.settings.rotation.earth;
         if (Scene.settings.lockCameraToEarth) {
             if (Scene.settings.needsCameraReset) {
-                Scene.Camera.position.x = Scene.Obj.earth.position.x - Scene.settings.distance.moon * vectorX(earthOrbit + 45) * 0.15;
-                Scene.Camera.position.z = Scene.Obj.earth.position.z - Scene.settings.distance.moon * vectorZ(earthOrbit + 45) * 0.15;
-                Scene.Camera.rotation.y = (earthOrbit / 180 + 1) * Math.PI + 0.5;
+                Scene.Camera.position.x = Scene.Obj.earth.position.x - Scene.settings.distance.moon * vectorX(earthOrbit) * 0.10;
+                Scene.Camera.position.z = Scene.Obj.earth.position.z - Scene.settings.distance.moon * vectorZ(earthOrbit) * 0.10;
+                Scene.Camera.rotation.y = (earthOrbit / 180) * Math.PI + Math.PI;
                 Scene.settings.needsCameraReset = false;
             }
             Scene.Camera.position.x -= startX - Scene.Obj.earth.position.x;
@@ -297,7 +334,7 @@ var Animate = new (function() {
                 earthOrbit: earthOrbit
             });
         }
-        Graphs.MonthMarker.css({left: (earthOrbit / 3.6) + "%"});
+        Graphs.MonthMarker.css({left: ((earthOrbit) / 3.6) + "%"});
         Graphs.setDate(earthOrbit);
     };
     var $earth, $camera;
@@ -341,10 +378,11 @@ var Graphs = new (function() {
     var monthText = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     var $date;
     this.setDate = function(fraction) {
-        var d = new Date((fraction / 360 + Scene.settings.yearsSinceEpoch) * Scene.settings.secondsInYear);
+        var yearStart = new Date(new Date().getFullYear(), 0, 0).getTime();
+        var d = new Date((fraction / 360) * Scene.settings.secondsInYear + yearStart);
         d = d.toString().split(" ").splice(0,5);
         d[4] = d[4].split(":").splice(0,2).join(":");
-        $date.html(d.join(" "));
+        $date.html(d.join(" ") + " PST");
     };
     var Init = function() {
         $('body').append("<div class='graphs'><div class='date'></div><div class='months'></div></div>");
