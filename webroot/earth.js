@@ -1,9 +1,5 @@
 var Scene = new (function() {
-    this.Obj = {
-        earth: null,
-        sun:   null,
-        moon:  null
-    };
+    this.Obj = {};
     var pixelsPerKm = 0.05;
     var settings = this.settings = {
         diameter: {
@@ -31,18 +27,19 @@ var Scene = new (function() {
         yearsSinceEpoch: 43,
         pixelsPerKm: pixelsPerKm
     };
-    this.Camera = null;
-    this.Scene = null;
-    this.Renderer = null;
     this.Init = function() {
         Scene.Scene = new THREE.Scene(); // Initialize Scene
         Scene.Camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, settings.distance.earth * 1.5); // Initialize Camera
         Scene.Camera.rotation.y = -1.1; // Rotated back to see moon and earth
         Scene.Scene.add(Scene.Camera); // Add to scene
 
-        Scene.Obj.earth = addEarth(settings.diameter.earth, 0, settings.distance.earth); // Earth
-        Scene.Obj.moon  = addMoon(settings.diameter.moon, settings.distance.earth, settings.distance.moon); // Moon
-        Scene.Obj.sun   = addSun(settings.diameter.sun, 0, 0, 0xFFFF33); // Sun
+        Scene.Obj.earth   = addEarth(settings.diameter.earth, 0, settings.distance.earth, "lib/earth_mrdoob.jpg");
+        Scene.Obj.moon    = addMoon(settings.diameter.moon, settings.distance.earth, settings.distance.moon);
+        Scene.Obj.sun     = addSun(settings.diameter.sun, 0, 0, 0xFFFF33);
+
+        Scene.Obj.tropics = addEarth(settings.diameter.earth, 0, settings.distance.earth, "tropics.png");
+        Scene.Obj.earth.overlays = [Scene.Obj.tropics];
+        Scene.Obj.tropics.material.opacity = 0;
 
         if (localStorage && localStorage.camera) {
             try {
@@ -50,6 +47,7 @@ var Scene = new (function() {
                 Scene.Camera.position.x = camera.posX;
                 Scene.Camera.position.z = camera.posZ;
                 Scene.Camera.rotation.y = camera.rotY;
+                Scene.Obj.tropics.material.opacity = camera.tropicsOpacity;
                 Scene.settings.needsCameraReset = false;
             } catch(e) {}
         }
@@ -80,16 +78,16 @@ var Scene = new (function() {
         }, 100);
     };
     var addLight = function(posX, posY, posZ) {
-        var light = new THREE.PointLight(0xffffff, 2);
+        var light = new THREE.PointLight(0xffffff, 1.15);
         light.position.x = posX;
         light.position.y = posY;
         light.position.z = posZ;
         Scene.Scene.add(light);
     };
-    var addEarth = function(diameter, posX, posZ) {
+    var addEarth = function(diameter, posX, posZ, img) {
         var radius = diameter / 2;
         var geometry = new THREE.SphereGeometry(radius, 50, 50);
-        var material = new THREE.MeshLambertMaterial({map:THREE.ImageUtils.loadTexture('lib/earth_mrdoob.jpg')});
+        var material = new THREE.MeshLambertMaterial({map:THREE.ImageUtils.loadTexture(img), transparent:true});
         var sphere = new THREE.Mesh(geometry, material);
         sphere.position.x = posX;
         sphere.position.z = posZ;
@@ -199,12 +197,27 @@ var Controls = new (function() {
         if (localStorage) localStorage.lockCameraToEarth = Scene.settings.lockCameraToEarth ? "true" : "false";
         setButtonStatuses();
     };
-    var $lockButton, $playButton, $speedButton;
+    this.highlightTropics = function() {
+        Scene.Obj.tropics.material.opacity = Scene.Obj.tropics.material.opacity == 0 ? 1 : 0;
+        setButtonStatuses();
+    };
+    var $lockButton
+      , $playButton
+      , $speedButton
+      , $topicsButton
+    ;
+    var Init = function() {
+        $lockButton = $('#lockButton');
+        $playButton = $('#playButton');
+        $speedButton = $('#speedButton');
+        $topicsButton = $('#tropicsButton');
+    };
+    $(Init);
     var setButtonStatuses = this.setButtonStatuses = function() {
-        if (!$lockButton || !$playButton || $speedButton) ($lockButton = $('#lockButton')) && ($playButton = $('#playButton')) && ($speedButton = $('#speedButton'));
         $lockButton.val("Lock to Earth: " + (Scene.settings.lockCameraToEarth ? "On" : "Off"));
         $playButton.val("Move Objects: " + (Scene.settings.moveObjects ? "On" : "Off"));
         $speedButton.val("Speed: " + (Scene.settings.timeMultiplier == 1 ? "Real-time" : (Scene.settings.timeMultiplier == 3600 ? "1 sec = 1 hour" : "1 sec = 1 day")));
+        $topicsButton.val("Highlight Tropics: " + (Scene.Obj.tropics.material.opacity == 1 ? "On" : "Off"));
     };
 });
 var Animate = new (function() {
@@ -260,7 +273,8 @@ var Animate = new (function() {
             localStorage.camera = JSON.stringify({
                 posZ: Scene.Camera.position.z,
                 posX: Scene.Camera.position.x,
-                rotY: Scene.Camera.rotation.y
+                rotY: Scene.Camera.rotation.y,
+                tropicsOpacity: Scene.Obj.tropics.material.opacity
             });
         }
     };
@@ -299,7 +313,6 @@ var Animate = new (function() {
         "2013-09-19 11:12:38",
         "2013-10-18 23:37:36",
         "2013-11-17 15:16:30",
-        "2013-11-17 15:16:30"
     ];
     var moonOrbit = 113.37
       , earthOrbit = 113.37;
@@ -321,15 +334,20 @@ var Animate = new (function() {
         Scene.Obj.earth.position.x = Scene.settings.distance.earth * vectorX(earthOrbit);
         Scene.Obj.earth.position.z = Scene.settings.distance.earth * vectorZ(earthOrbit);
         Scene.Obj.earth.rotation.y = earthOrbit / 360 * 2 * Math.PI * Scene.settings.orbit.earth / Scene.settings.rotation.earth;
+        Scene.Obj.tropics.position = Scene.Obj.earth.position;
+        var distanceFromEarth = Math.sqrt(Math.pow(Scene.Obj.earth.position.x - Scene.Camera.position.x, 2) + Math.pow(Scene.Obj.earth.position.z - Scene.Camera.position.z, 2)) / Scene.settings.distance.earth;
+        for (var i = 0; i < Scene.Obj.earth.overlays.length; i++) {
+            Scene.Obj.earth.overlays[i].scale.x = Scene.Obj.earth.overlays[i].scale.z = Scene.Obj.earth.overlays[i].scale.y = 1 + distanceFromEarth * 40;
+        }
         if (Scene.settings.lockCameraToEarth) {
+            Scene.Camera.position.x -= startX - Scene.Obj.earth.position.x;
+            Scene.Camera.position.z -= startZ - Scene.Obj.earth.position.z;
             if (Scene.settings.needsCameraReset) {
                 Scene.Camera.position.x = Scene.Obj.earth.position.x - Scene.settings.distance.moon * vectorX(earthOrbit) * 0.10;
                 Scene.Camera.position.z = Scene.Obj.earth.position.z - Scene.settings.distance.moon * vectorZ(earthOrbit) * 0.10;
                 Scene.Camera.rotation.y = (earthOrbit / 180) * Math.PI + Math.PI;
                 Scene.settings.needsCameraReset = false;
             }
-            Scene.Camera.position.x -= startX - Scene.Obj.earth.position.x;
-            Scene.Camera.position.z -= startZ - Scene.Obj.earth.position.z;
             var difference = {
                 x: Scene.Camera.position.x - Scene.Obj.earth.position.x,
                 z: Scene.Camera.position.z - Scene.Obj.earth.position.z
