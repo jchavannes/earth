@@ -75,12 +75,7 @@ var Scene = new (function() {
         var geometry = new THREE.SphereGeometry(radius, 50, 50);
         var material = new THREE.MeshLambertMaterial({map:THREE.ImageUtils.loadTexture(img), transparent:true});
         var sphere = addSphere(geometry, material, posX, posZ);
-        var d = new Date();
-        var time = (d.getMinutes() + 60 * d.getHours()) / (24 * 60);
-        time += 8 / 24;
-        sphere.rotation.y = time * 2 * Math.PI;
         sphere.rotation.x = 23.4 / 180 * Math.PI;
-        Scene.Scene.add(sphere);
         return sphere;
     };
     var addMoon = function(radius, posX, posZ) {
