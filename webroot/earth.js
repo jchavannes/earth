@@ -21,7 +21,7 @@ var Scene = new (function() {
         },
         timeMultiplier: 1, // 3600 = 1 hour/sec, 60 = 1 minute/sec, 1 = real-time
         moveObjects: true,
-        lockCameraToEarth: false,
+        lockCameraToEarth: true,
         needsCameraReset: true,
         secondsInYear: 60*60*24*365*1000,
         yearsSinceEpoch: 43,
@@ -500,7 +500,14 @@ var LS = new (function() {
             localStorage.camera = null;
             localStorage.orbits = null;
             localStorage.lockCameraToEarth = null;
+            localStorage.expire = null;
         }
+    };
+    if (!(localStorage && localStorage.expire && localStorage.expire > new Date().getTime())) {
+        this.clearAll();
+    }
+    if (localStorage) {
+        localStorage.expire = new Date().getTime() + 1000 * 60 * 60 * 6; // 6 hours
     }
 });
 Math.toRad = function(num) {
