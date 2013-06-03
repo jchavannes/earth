@@ -12,12 +12,12 @@ var Scene = new (function() {
             moon:  pixelsPerKm * 384400
         },
         rotation: {
-            earth: 23.934, // The earth rotates 366.26 times in 365.26 days
+            earth: 23.934,
             moon:  653
         },
         orbit: {
-            earth: 8766, // 365.26
-            moon:  653 // 27.21
+            earth: 365.26,
+            moon:  27.21
         },
         timeMultiplier: 1, // 3600 = 1 hour/sec, 60 = 1 minute/sec, 1 = real-time
         moveObjects: true,
@@ -27,30 +27,22 @@ var Scene = new (function() {
         yearsSinceEpoch: 43,
         pixelsPerKm: pixelsPerKm
     };
-    this.Init = function() {
+    var Init = function() {
         Scene.Scene = new THREE.Scene(); // Initialize Scene
         Scene.Camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, settings.distance.earth * 1.5); // Initialize Camera
         Scene.Camera.rotation.y = -1.1; // Rotated back to see moon and earth
         Scene.Scene.add(Scene.Camera); // Add to scene
 
-        Scene.Obj.earth   = addEarth(settings.diameter.earth, 0, settings.distance.earth, "lib/earth_mrdoob.jpg");
-        Scene.Obj.moon    = addMoon(settings.diameter.moon, settings.distance.earth, settings.distance.moon);
-        Scene.Obj.sun     = addSun(settings.diameter.sun, 0, 0, 0xFFFF33);
+        Scene.Obj.earth   = addEarth(settings.diameter.earth / 2, 0, settings.distance.earth, "lib/earth_mrdoob.jpg");
+        Scene.Obj.moon    = addMoon(settings.diameter.moon / 2, settings.distance.earth, settings.distance.moon);
+        Scene.Obj.sun     = addSun(settings.diameter.sun / 2, 0, 0, 0xFFFF33);
 
-        Scene.Obj.tropics = addEarth(settings.diameter.earth, 0, settings.distance.earth, "tropics.png");
+        Scene.Obj.tropics = addEarth(settings.diameter.earth / 2, 0, settings.distance.earth, "tropics.png");
         Scene.Obj.earth.overlays = [Scene.Obj.tropics];
         Scene.Obj.tropics.material.opacity = 0;
 
-        if (localStorage && localStorage.camera) {
-            try {
-                var camera = JSON.parse(localStorage.camera);
-                Scene.Camera.position.x = camera.posX;
-                Scene.Camera.position.z = camera.posZ;
-                Scene.Camera.rotation.y = camera.rotY;
-                Scene.Obj.tropics.material.opacity = camera.tropicsOpacity;
-                Scene.settings.needsCameraReset = false;
-            } catch(e) {}
-        }
+        LS.loadCamera();
+        LS.loadCameraLock();
 
         addLight(0, 0, 0); // Sunlight
         Scene.Scene.add(new THREE.AmbientLight(0x111111));  // Ambient
@@ -71,11 +63,6 @@ var Scene = new (function() {
         Scene.Renderer = new THREE.WebGLRenderer();
         Scene.Renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(Scene.Renderer.domElement);
-        setTimeout(function() {
-            Scene.settings.lockCameraToEarth = true;
-            if (localStorage && localStorage.lockCameraToEarth) Scene.settings.lockCameraToEarth = localStorage.lockCameraToEarth != "false";
-            Controls.setButtonStatuses();
-        }, 100);
     };
     var addLight = function(posX, posY, posZ) {
         var light = new THREE.PointLight(0xffffff, 1.15);
@@ -84,13 +71,10 @@ var Scene = new (function() {
         light.position.z = posZ;
         Scene.Scene.add(light);
     };
-    var addEarth = function(diameter, posX, posZ, img) {
-        var radius = diameter / 2;
+    var addEarth = function(radius, posX, posZ, img) {
         var geometry = new THREE.SphereGeometry(radius, 50, 50);
         var material = new THREE.MeshLambertMaterial({map:THREE.ImageUtils.loadTexture(img), transparent:true});
-        var sphere = new THREE.Mesh(geometry, material);
-        sphere.position.x = posX;
-        sphere.position.z = posZ;
+        var sphere = addSphere(geometry, material, posX, posZ);
         var d = new Date();
         var time = (d.getMinutes() + 60 * d.getHours()) / (24 * 60);
         time += 8 / 24;
@@ -99,27 +83,24 @@ var Scene = new (function() {
         Scene.Scene.add(sphere);
         return sphere;
     };
-    var addMoon = function(diameter, posX, posZ) {
-        var radius = diameter / 2;
+    var addMoon = function(radius, posX, posZ) {
         var geometry = new THREE.SphereGeometry(radius, 50, 50);
         var material = new THREE.MeshLambertMaterial({map:THREE.ImageUtils.loadTexture('lib/moon_mrdoob.jpg')});
-        var sphere = new THREE.Mesh(geometry, material);
-        sphere.position.x = posX;
-        sphere.position.z = posZ;
-        Scene.Scene.add(sphere);
-        return sphere;
+        return addSphere(geometry, material, posX, posZ);
     };
-    var addSun = function(diameter, posX, posZ, color) {
-        var radius = diameter / 2;
+    var addSun = function(radius, posX, posZ, color) {
         var geometry = new THREE.SphereGeometry(radius, 50, 50);
         var material = new THREE.MeshBasicMaterial({color:color});
+        return addSphere(geometry, material, posX, posZ);
+    };
+    var addSphere = function(geometry, material, posX, posZ) {
         var sphere = new THREE.Mesh(geometry, material);
         sphere.position.x = posX;
         sphere.position.z = posZ;
         Scene.Scene.add(sphere);
         return sphere;
     };
-    $(this.Init);
+    $(Init);
 });
 var Controls = new (function() {
     this.keyDown = {
@@ -155,22 +136,19 @@ var Controls = new (function() {
     });
     this.reset = function() {
         Animate.clearInterval();
-        if (localStorage) {
-            localStorage.camera = null;
-            localStorage.orbits = null;
-            localStorage.lockCameraToEarth = null;
-        }
-        location.reload();
+        LS.clearAll();
+        location.href = window.location.href;
     };
     this.timeToggle = function() {
-        if (Scene.settings.timeMultiplier == 1) {
-            Scene.settings.timeMultiplier = 3600;
-        }
-        else if (Scene.settings.timeMultiplier == 3600) {
-            Scene.settings.timeMultiplier = 86400;
-        }
-        else {
-            Scene.settings.timeMultiplier = 1;
+        switch (Scene.settings.timeMultiplier) {
+            case 1:
+                Scene.settings.timeMultiplier = 3600;
+                break;
+            case 3600:
+                Scene.settings.timeMultiplier = 86400;
+                break;
+            default:
+                Scene.settings.timeMultiplier = 1;
         }
         setButtonStatuses();
     };
@@ -180,13 +158,13 @@ var Controls = new (function() {
     };
     this.earthLock = function() {
         Scene.settings.lockCameraToEarth = !Scene.settings.lockCameraToEarth;
-        if (localStorage) localStorage.lockCameraToEarth = Scene.settings.lockCameraToEarth ? "true" : "false";
+        LS.saveCameraLock();
         setButtonStatuses();
     };
     this.backToEarth = function() {
         Scene.settings.needsCameraReset = true;
         Scene.settings.lockCameraToEarth = true;
-        if (localStorage) localStorage.lockCameraToEarth = Scene.settings.lockCameraToEarth ? "true" : "false";
+        LS.saveCameraLock();
         setButtonStatuses();
     };
     this.visitTheSun = function() {
@@ -194,7 +172,7 @@ var Controls = new (function() {
         Scene.Camera.position.z = Scene.settings.diameter.sun;
         Scene.Camera.rotation.y = 5.54;
         Scene.settings.lockCameraToEarth = false;
-        if (localStorage) localStorage.lockCameraToEarth = Scene.settings.lockCameraToEarth ? "true" : "false";
+        LS.saveCameraLock();
         setButtonStatuses();
     };
     this.highlightTropics = function() {
@@ -221,32 +199,40 @@ var Controls = new (function() {
     };
 });
 var Animate = new (function() {
-    var interval;
-    this.Init = function() {
-        Animate.setEarthOrbit();
-        (function() {
-            if (localStorage && localStorage.orbits) {
-                try {
-                    var orbits = JSON.parse(localStorage.orbits);
-                    moonOrbit = orbits.moonOrbit;
-                    earthOrbit = orbits.earthOrbit;
-                } catch(e) {}
-            }
-        })();
-        interval = setInterval(update, 1000 / 30);
+    var updateInterval
+      , moonOrbit
+      , earthOrbit
+      , $earthIcon
+      , $cameraIcon
+    ;
+    var Init = function() {
+        $earthIcon = $('.orbit .earth');
+        $cameraIcon = $('.orbit .camera');
+        var orbits = LS.loadOrbits();
+        if (orbits != false) {
+            moonOrbit = orbits.moon;
+            earthOrbit = orbits.earth;
+        }
+        else {
+            Animate.setEarthOrbit();
+        }
+        Scene.Obj.earth.position.x = Scene.settings.distance.earth * vectorX(earthOrbit);
+        Scene.Obj.earth.position.z = Scene.settings.distance.earth * vectorZ(earthOrbit);
+        updateInterval = setInterval(update, 1000 / 30);
+        Controls.setButtonStatuses();
     };
     this.clearInterval = function() {
-        clearInterval(interval);
+        clearInterval(updateInterval);
     };
     var update = function() {
         if (Scene.settings.moveObjects) updateObjects();
         updateCamera();
+        setOrbitIcons();
         Scene.Renderer.render(Scene.Scene, Scene.Camera);
-        setOrbitImgs();
     };
     var updateCamera = function() {
         var speed = Scene.settings.diameter.earth;
-        var direction = (Scene.Camera.rotation.y % (2 * Math.PI)) / (2 * Math.PI) * 360;
+        var direction = Math.toDeg(Scene.Camera.rotation.y);
         if (Controls.keyDown.up || Controls.keyDown.keyW) {
             Scene.Camera.position.z -= speed * vectorZ(direction);
             Scene.Camera.position.x -= speed * vectorX(direction);
@@ -269,26 +255,14 @@ var Animate = new (function() {
         if (Controls.keyDown.right) {
             Scene.Camera.rotation.y -= 0.1;
         }
-        if (localStorage) {
-            localStorage.camera = JSON.stringify({
-                posZ: Scene.Camera.position.z,
-                posX: Scene.Camera.position.x,
-                rotY: Scene.Camera.rotation.y,
-                tropicsOpacity: Scene.Obj.tropics.material.opacity
-            });
-        }
+        LS.saveCamera();
     };
-    this.setEarthOrbit = function(day) {
+    this.setEarthOrbit = function() {
         var orbit;
-        if (typeof day == "undefined") {
-            var now = new Date();
-            var start = new Date(now.getFullYear(), 0, 0).getTime();
-            var end = new Date(now.getFullYear() + 1, 0, 0).getTime() + 0.26 * 60 * 60 * Scene.settings.rotation.earth;
-            orbit = (now.getTime() - start) / (end - start) * 360;
-        }
-        else {
-            orbit = day / (Graphs.getDaysInYear(new Date().getYear() + 0.26)) * 360;
-        }
+        var now = new Date();
+        var start = new Date(now.getFullYear(), 0, 0).getTime();
+        var end = new Date(now.getFullYear() + 1, 0, 0).getTime() + 0.26 * 60 * 60 * Scene.settings.rotation.earth;
+        orbit = (now.getTime() - start) / (end - start) * 360;
         earthOrbit = orbit;
         var nextFullMoon;
         for (var i = 0; i < phases.length; i++) {
@@ -299,7 +273,7 @@ var Animate = new (function() {
         }
         var lastFullMoon = new Date(phases[i-1]);
         moonOrbit = (now - lastFullMoon) / (nextFullMoon - lastFullMoon) * 360 + earthOrbit;
-        if (moonOrbit > 360) moonOrbit -= 360;
+        while (moonOrbit > 360) moonOrbit -= 360;
     };
     var phases = [
         "2013-01-27 04:40:28",
@@ -314,28 +288,28 @@ var Animate = new (function() {
         "2013-10-18 23:37:36",
         "2013-11-17 15:16:30",
     ];
-    var moonOrbit = 113.37
-      , earthOrbit = 113.37;
     var updateObjects = function() {
         var hourToFrameRate = 108000 / Scene.settings.timeMultiplier;
         if (Scene.settings.lockCameraToEarth) {
             var startX = Scene.Obj.earth.position.x;
             var startZ = Scene.Obj.earth.position.z;
         }
-        var rotation = 1 / Scene.settings.orbit.earth / hourToFrameRate * 360;
+        var rotation = 1 / Scene.settings.orbit.earth / 24 / hourToFrameRate * 360;
         earthOrbit += rotation;
         rotation = rotation / 360 * 2 * Math.PI;
         if (earthOrbit >= 360) {
             earthOrbit = 0;
-            setTimeout(function() {
-                Controls.reset();
-            }, 1);
+            setTimeout(Controls.reset, 1);
         }
         Scene.Obj.earth.position.x = Scene.settings.distance.earth * vectorX(earthOrbit);
         Scene.Obj.earth.position.z = Scene.settings.distance.earth * vectorZ(earthOrbit);
-        Scene.Obj.earth.rotation.y = earthOrbit / 360 * 2 * Math.PI * Scene.settings.orbit.earth / Scene.settings.rotation.earth;
+        Scene.Obj.earth.rotation.y = Math.toRad(earthOrbit) * Scene.settings.orbit.earth * 24 / Scene.settings.rotation.earth;
         Scene.Obj.tropics.position = Scene.Obj.earth.position;
-        var distanceFromEarth = Math.sqrt(Math.pow(Scene.Obj.earth.position.x - Scene.Camera.position.x, 2) + Math.pow(Scene.Obj.earth.position.z - Scene.Camera.position.z, 2)) / Scene.settings.distance.earth;
+        var distanceFromEarth =
+            Math.sqrt(
+                Math.pow(Scene.Obj.earth.position.x - Scene.Camera.position.x, 2)
+                + Math.pow(Scene.Obj.earth.position.z - Scene.Camera.position.z, 2)
+            ) / Scene.settings.distance.earth;
         for (var i = 0; i < Scene.Obj.earth.overlays.length; i++) {
             Scene.Obj.earth.overlays[i].scale.x = Scene.Obj.earth.overlays[i].scale.z = Scene.Obj.earth.overlays[i].scale.y = 1 + distanceFromEarth * 40;
         }
@@ -343,9 +317,9 @@ var Animate = new (function() {
             Scene.Camera.position.x -= startX - Scene.Obj.earth.position.x;
             Scene.Camera.position.z -= startZ - Scene.Obj.earth.position.z;
             if (Scene.settings.needsCameraReset) {
-                Scene.Camera.position.x = Scene.Obj.earth.position.x - Scene.settings.distance.moon * vectorX(earthOrbit) * 0.10;
-                Scene.Camera.position.z = Scene.Obj.earth.position.z - Scene.settings.distance.moon * vectorZ(earthOrbit) * 0.10;
-                Scene.Camera.rotation.y = (earthOrbit / 180) * Math.PI + Math.PI;
+                Scene.Camera.position.x = Scene.Obj.earth.position.x - vectorX(earthOrbit) * 0.10 * Scene.settings.distance.moon;
+                Scene.Camera.position.z = Scene.Obj.earth.position.z - vectorZ(earthOrbit) * 0.10 * Scene.settings.distance.moon;
+                Scene.Camera.rotation.y = Math.toRad(earthOrbit + 180);
                 Scene.settings.needsCameraReset = false;
             }
             var difference = {
@@ -357,35 +331,28 @@ var Animate = new (function() {
             Scene.Camera.position.z = Scene.Obj.earth.position.z + cords.z;
             Scene.Camera.rotation.y += rotation;
         }
-        moonOrbit += 1 / Scene.settings.orbit.moon / hourToFrameRate * 360;
+        moonOrbit += 1 / Scene.settings.orbit.moon / 24 / hourToFrameRate * 360;
         if (moonOrbit >= 360) moonOrbit = 0;
         Scene.Obj.moon.position.x = Scene.settings.distance.moon * vectorX(moonOrbit) + Scene.Obj.earth.position.x;
         Scene.Obj.moon.position.z = Scene.settings.distance.moon * vectorZ(moonOrbit) + Scene.Obj.earth.position.z;
         Scene.Obj.moon.rotation.y = moonOrbit / 360 * 2 * Math.PI + 1.2;
-        if (localStorage) {
-            localStorage.orbits = JSON.stringify({
-                moonOrbit: moonOrbit,
-                earthOrbit: earthOrbit
-            });
-        }
+        LS.saveOrbits(moonOrbit, earthOrbit);
         Graphs.MonthMarker.css({left: ((earthOrbit) / 3.6) + "%"});
         Graphs.setDate(earthOrbit);
     };
-    var $earth, $camera;
-    var setOrbitImgs = function() {
-        if (!$earth || !$camera) ($earth = $('.orbit .earth')) && ($camera = $('.orbit .camera'));
+    var setOrbitIcons = function() {
         var direction = earthOrbit + (10 / 365 * 360);
-        $earth.css({
+        $earthIcon.css({
             left: vectorX(direction) * 99 + 98,
             top: vectorZ(direction) * 99 + 98
         });
-        direction = (Scene.Camera.rotation.y % (2 * Math.PI)) / (2 * Math.PI) * -360 - 90;
+        direction = Math.toDeg(Scene.Camera.rotation.y) * -1 - 90;
         var cords = rotateCords(
             Scene.Camera.position.z / Scene.settings.distance.earth * 99,
             Scene.Camera.position.x / Scene.settings.distance.earth * 99,
-            10/365 * 2 * Math.PI
+            10 / 365 * 2 * Math.PI
         );
-        $camera.css({
+        $cameraIcon.css({
             WebkitTransform: 'rotate(' + direction + 'deg)',
             '-moz-transform': 'rotate(' + direction + 'deg)',
             top: cords.x + 95,
@@ -404,8 +371,8 @@ var Animate = new (function() {
             z: x * Math.sin(a) + z * Math.cos(a)
         };
     };
-    $(this.Init);
-    $(window).resize(function() {location.reload();});
+    $(Init);
+    $(window).resize(function() {location.href = window.location.href;});
 });
 var Graphs = new (function() {
     this.MonthMarker = null;
@@ -474,3 +441,73 @@ var Graphs = new (function() {
     };
     $(Init);
 });
+var LS = new (function() {
+    this.saveCamera = function() {
+        if (localStorage) {
+            localStorage.camera = JSON.stringify({
+                posZ: Scene.Camera.position.z,
+                posX: Scene.Camera.position.x,
+                rotY: Scene.Camera.rotation.y,
+                tropicsOpacity: Scene.Obj.tropics.material.opacity,
+                timeMultiplier: Scene.settings.timeMultiplier
+            });
+        }
+    };
+    this.loadCamera = function() {
+        if (localStorage && localStorage.camera) {
+            try {
+                var camera = JSON.parse(localStorage.camera);
+                Scene.Camera.position.x = camera.posX;
+                Scene.Camera.position.z = camera.posZ;
+                Scene.Camera.rotation.y = camera.rotY;
+                Scene.Obj.tropics.material.opacity = camera.tropicsOpacity;
+                Scene.settings.timeMultiplier = parseInt(camera.timeMultiplier);
+                Scene.settings.needsCameraReset = false;
+            } catch(e) {}
+        }
+    };
+    this.saveCameraLock = function() {
+        if (localStorage) {
+            localStorage.lockCameraToEarth = Scene.settings.lockCameraToEarth ? "true" : "false";
+        }
+    };
+    this.loadCameraLock = function() {
+        if (localStorage && localStorage.lockCameraToEarth) {
+            Scene.settings.lockCameraToEarth = localStorage.lockCameraToEarth != "false";
+        }
+    };
+    this.saveOrbits = function(moonOrbit, earthOrbit) {
+        if (localStorage) {
+            localStorage.orbits = JSON.stringify({
+                moonOrbit: moonOrbit,
+                earthOrbit: earthOrbit
+            });
+        }
+    };
+    this.loadOrbits = function() {
+        if (localStorage && localStorage.orbits) {
+            try {
+                var orbits = JSON.parse(localStorage.orbits);
+                var moonOrbit = orbits.moonOrbit;
+                var earthOrbit = orbits.earthOrbit;
+                return {moon:moonOrbit, earth:earthOrbit};
+            } catch(e) {}
+        }
+        return false;
+    };
+    this.clearAll = function() {
+        if (localStorage) {
+            localStorage.camera = null;
+            localStorage.orbits = null;
+            localStorage.lockCameraToEarth = null;
+        }
+    }
+});
+Math.toRad = function(num) {
+    while (num > 360) num -= 360;
+    return num / 360 * 2 * Math.PI;
+};
+Math.toDeg = function(num) {
+    num %= 2 * Math.PI;
+    return num / (2 * Math.PI) * 360;
+};
