@@ -33,11 +33,11 @@ var Scene = new (function() {
         Scene.Camera.rotation.y = -1.1; // Rotated back to see moon and earth
         Scene.Scene.add(Scene.Camera); // Add to scene
 
-        Scene.Obj.earth   = addEarth(settings.diameter.earth / 2, 0, settings.distance.earth, "lib/earth_mrdoob.jpg");
+        Scene.Obj.earth   = addEarth(settings.diameter.earth / 2, 0, settings.distance.earth, "res/earth_mrdoob.jpg");
         Scene.Obj.moon    = addMoon(settings.diameter.moon / 2, settings.distance.earth, settings.distance.moon);
         Scene.Obj.sun     = addSun(settings.diameter.sun / 2, 0, 0, 0xFFFF33);
 
-        Scene.Obj.tropics = addEarth(settings.diameter.earth / 2, 0, settings.distance.earth, "tropics.png");
+        Scene.Obj.tropics = addEarth(settings.diameter.earth / 2, 0, settings.distance.earth, "res/tropics.png");
         Scene.Obj.earth.overlays = [Scene.Obj.tropics];
         Scene.Obj.tropics.material.opacity = 0;
 
@@ -85,7 +85,7 @@ var Scene = new (function() {
     };
     var addMoon = function(radius, posX, posZ) {
         var geometry = new THREE.SphereGeometry(radius, 50, 50);
-        var material = new THREE.MeshLambertMaterial({map:THREE.ImageUtils.loadTexture('lib/moon_mrdoob.jpg')});
+        var material = new THREE.MeshLambertMaterial({map:THREE.ImageUtils.loadTexture('res/moon_mrdoob.jpg')});
         return addSphere(geometry, material, posX, posZ);
     };
     var addSun = function(radius, posX, posZ, color) {
