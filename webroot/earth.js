@@ -19,19 +19,18 @@ var Scene = new (function() {
             earth: 365.26,
             moon:  27.21
         },
-        timeMultiplier: 1, // 3600 = 1 hour/sec, 60 = 1 minute/sec, 1 = real-time
+        timeMultiplier: 1, // 1 = real-time, 60 = 1 minute/sec, 3600 = 1 hour/sec
         moveObjects: true,
         lockCameraToEarth: true,
         needsCameraReset: true,
-        secondsInYear: 60*60*24*365*1000,
+        secondsInYear: 60 * 60 * 24 * 365 * 1000,
         yearsSinceEpoch: 43,
         pixelsPerKm: pixelsPerKm
     };
     var Init = function() {
-        Scene.Scene = new THREE.Scene(); // Initialize Scene
-        Scene.Camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, settings.distance.earth * 1.5); // Initialize Camera
-        Scene.Camera.rotation.y = -1.1; // Rotated back to see moon and earth
-        Scene.Scene.add(Scene.Camera); // Add to scene
+        Scene.Scene = new THREE.Scene();
+        Scene.Camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, settings.distance.earth * 1.5);
+        Scene.Scene.add(Scene.Camera);
 
         Scene.Obj.earth   = addEarth(settings.diameter.earth / 2, 0, settings.distance.earth, "res/earth_mrdoob.jpg");
         Scene.Obj.moon    = addMoon(settings.diameter.moon / 2, settings.distance.earth, settings.distance.moon);
@@ -44,10 +43,9 @@ var Scene = new (function() {
         LS.loadCamera();
         LS.loadCameraLock();
 
-        addLight(0, 0, 0); // Sunlight
-        Scene.Scene.add(new THREE.AmbientLight(0x111111));  // Ambient
+        Scene.Scene.add(new THREE.PointLight(0xffffff, 1.15)); // Sunlight
+        Scene.Scene.add(new THREE.AmbientLight(0x111111)); // Ambient
 
-        // Stars
         var stars = new THREE.Geometry();
         for (var i = 0; i < 1e4; i++) {
             var factor = 1e8 * settings.pixelsPerKm;
@@ -63,13 +61,6 @@ var Scene = new (function() {
         Scene.Renderer = new THREE.WebGLRenderer();
         Scene.Renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(Scene.Renderer.domElement);
-    };
-    var addLight = function(posX, posY, posZ) {
-        var light = new THREE.PointLight(0xffffff, 1.15);
-        light.position.x = posX;
-        light.position.y = posY;
-        light.position.z = posZ;
-        Scene.Scene.add(light);
     };
     var addEarth = function(radius, posX, posZ, img) {
         var geometry = new THREE.SphereGeometry(radius, 50, 50);
