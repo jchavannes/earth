@@ -13,7 +13,7 @@
 <body>
     <div class="controls">
         <h2>Movement Controls</h2>
-        Use W, A, S, D & Arrow Keys<br/>
+        Use Arrow Keys &amp; W A S D<br/>
         <br/>
         <h2>Info</h2>
         Arrow Key Movement Speed:<br/>
@@ -26,13 +26,13 @@
         Graph:<br/>
         <span class="lineLegend"></span> = Lunar Cycles<br/>
         <br/>
-        <input type="button" id="speedButton" onclick="Controls.timeToggle();" value="Speed" /><br/>
+        <input type="button" id="resetButton" onclick="Controls.reset();" value="Reset" /><br/>
         <input type="button" id="playButton" onclick="Controls.playPause();" value="Move Objects" /><br/>
+        <input type="button" id="speedButton" onclick="Controls.timeToggle();" value="Speed" /><br/>
         <input type="button" id="lockButton" onclick="Controls.earthLock();" value="Lock to Earth" /><br/>
         <input type="button" id="tropicsButton" onclick="Controls.highlightTropics();" value="Highlight Tropics" /><br/>
         <input type="button" id="earthButton" onclick="Controls.backToEarth();" value="Back to Earth" /><br/>
         <input type="button" id="sunButton" onclick="Controls.visitTheSun();" value="Visit the Sun" /><br/>
-        <input type="button" id="resetButton" onclick="Controls.reset();" value="Reset" /><br/>
     </div>
     <div class="stats">
         <h2>Scale</h2>
