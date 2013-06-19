@@ -208,6 +208,9 @@ var Animate = new (function() {
     this.clearInterval = function() {
         clearInterval(updateInterval);
     };
+    this.getEarthOrbit = function() {
+        return earthOrbit;
+    };
     var update = function() {
         if (Scene.settings.moveObjects) updateObjects();
         updateCamera();
@@ -242,12 +245,10 @@ var Animate = new (function() {
         LS.saveCamera();
     };
     this.setEarthOrbit = function() {
-        var orbit;
         var now = new Date();
         var start = new Date(now.getFullYear(), 0, 0).getTime();
         var end = new Date(now.getFullYear() + 1, 0, 0).getTime() + 0.26 * 60 * 60 * Scene.settings.rotation.earth;
-        orbit = (now.getTime() - start) / (end - start) * 360;
-        earthOrbit = orbit;
+        earthOrbit = (now.getTime() - start) / (end - start) * 360;
         var nextFullMoon;
         for (var i = 0; i < phases.length; i++) {
             nextFullMoon = new Date(phases[i]);
@@ -278,9 +279,18 @@ var Animate = new (function() {
             var startX = Scene.Obj.earth.position.x;
             var startZ = Scene.Obj.earth.position.z;
         }
-        var rotation = 1 / Scene.settings.orbit.earth / 24 / hourToFrameRate * 360;
+        var rotation;
+        if (Graphs.Drag.active) {
+            var distanceLeft = Graphs.Drag.newEarthOrbit - earthOrbit;
+            rotation = distanceLeft / Graphs.Drag.stepsLeft;
+            if (--Graphs.Drag.stepsLeft <= 0) {
+                Graphs.Drag.active = false;
+            }
+        }
+        else {
+            rotation = 1 / Scene.settings.orbit.earth / 24 / hourToFrameRate * 360;
+        }
         earthOrbit += rotation;
-        rotation = rotation / 360 * 2 * Math.PI;
         if (earthOrbit >= 360) {
             earthOrbit = 0;
             setTimeout(Controls.reset, 1);
@@ -289,14 +299,6 @@ var Animate = new (function() {
         Scene.Obj.earth.position.z = Scene.settings.distance.earth * vectorZ(earthOrbit);
         Scene.Obj.earth.rotation.y = Math.toRad(earthOrbit) * Scene.settings.orbit.earth * 24 / Scene.settings.rotation.earth;
         Scene.Obj.tropics.position = Scene.Obj.earth.position;
-        var distanceFromEarth =
-            Math.sqrt(
-                Math.pow(Scene.Obj.earth.position.x - Scene.Camera.position.x, 2)
-                + Math.pow(Scene.Obj.earth.position.z - Scene.Camera.position.z, 2)
-            ) / Scene.settings.distance.earth;
-        for (var i = 0; i < Scene.Obj.earth.overlays.length; i++) {
-            Scene.Obj.earth.overlays[i].scale.x = Scene.Obj.earth.overlays[i].scale.z = Scene.Obj.earth.overlays[i].scale.y = 1 + distanceFromEarth * 40;
-        }
         if (Scene.settings.lockCameraToEarth) {
             Scene.Camera.position.x -= startX - Scene.Obj.earth.position.x;
             Scene.Camera.position.z -= startZ - Scene.Obj.earth.position.z;
@@ -304,10 +306,10 @@ var Animate = new (function() {
                 x: Scene.Camera.position.x - Scene.Obj.earth.position.x,
                 z: Scene.Camera.position.z - Scene.Obj.earth.position.z
             };
-            var cords = rotateCords(difference.x, difference.z, -rotation);
+            var cords = rotateCords(difference.x, difference.z, -Math.toRad(rotation));
             Scene.Camera.position.x = Scene.Obj.earth.position.x + cords.x;
             Scene.Camera.position.z = Scene.Obj.earth.position.z + cords.z;
-            Scene.Camera.rotation.y += rotation;
+            Scene.Camera.rotation.y += Math.toRad(rotation);
         }
         if (Scene.settings.needsCameraReset) {
             Scene.Camera.position.x = Scene.Obj.earth.position.x - vectorX(earthOrbit) * 0.05 * Scene.settings.distance.moon;
@@ -315,13 +317,23 @@ var Animate = new (function() {
             Scene.Camera.rotation.y = Math.toRad(earthOrbit + 180);
             Scene.settings.needsCameraReset = false;
         }
-        moonOrbit += 1 / Scene.settings.orbit.moon / 24 / hourToFrameRate * 360;
+        var distanceFromEarth =
+            Math.sqrt(
+                Math.pow(Scene.Obj.earth.position.x - Scene.Camera.position.x, 2)
+                    + Math.pow(Scene.Obj.earth.position.z - Scene.Camera.position.z, 2)
+            ) / Scene.settings.distance.earth;
+        for (var i = 0; i < Scene.Obj.earth.overlays.length; i++) {
+            Scene.Obj.earth.overlays[i].scale.x = Scene.Obj.earth.overlays[i].scale.z = Scene.Obj.earth.overlays[i].scale.y = 1 + distanceFromEarth * 40;
+        }
+        moonOrbit += rotation * Scene.settings.orbit.earth / Scene.settings.orbit.moon;
         if (moonOrbit >= 360) moonOrbit = 0;
         Scene.Obj.moon.position.x = Scene.settings.distance.moon * vectorX(moonOrbit) + Scene.Obj.earth.position.x;
         Scene.Obj.moon.position.z = Scene.settings.distance.moon * vectorZ(moonOrbit) + Scene.Obj.earth.position.z;
         Scene.Obj.moon.rotation.y = moonOrbit / 360 * 2 * Math.PI + 1.2;
         LS.saveOrbits(moonOrbit, earthOrbit);
-        Graphs.MonthMarker.css({left: (earthOrbit / 3.6) + "%"});
+        if (!Graphs.$monthMarker.hasClass('draggable') && !Graphs.Drag.active) {
+            Graphs.$monthMarker.css({left: (earthOrbit / 3.6) + "%"});
+        }
         Graphs.setDate(earthOrbit);
     };
     var setOrbitIcons = function() {
@@ -359,7 +371,7 @@ var Animate = new (function() {
     $(window).resize(function() {location.href = window.location.href;});
 });
 var Graphs = new (function() {
-    this.MonthMarker = null;
+    this.$monthMarker = null;
     var monthText = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     var $date;
     this.setDate = function(fraction) {
@@ -370,7 +382,8 @@ var Graphs = new (function() {
         $date.html(d.join(" ") + " PST");
     };
     var Init = function() {
-        $('body').append("<div class='graphs'><div class='date'></div><div class='months'></div></div>");
+        var $body = $('body');
+        $body.append("<div class='graphs'><div class='date'></div><div class='months'></div></div>");
         $date = $('.date');
         var $months = $('.months');
         var i, g
@@ -388,9 +401,51 @@ var Graphs = new (function() {
             width = 100 / daysInMonth;
             $month.find('p').css({width: width + "%"});
         }
-        $months.append("<svg id='sineWave' width='100%' height='120'></svg><div class='marker'></div>");
+        $months.append("<svg id='sineWave' width='100%' height='120'></svg><div class='marker'><span class='handle'></span></div>");
         addSineOverlay();
-        Graphs.MonthMarker = $('.marker');
+        Graphs.$monthMarker = $('.marker');
+        var $handle = Graphs.$monthMarker.find('.handle');
+        var startEarthOrbit;
+        var finishDrag = function() {
+            var newEarthOrbit = parseInt(Graphs.$monthMarker.css('left')) / parseInt($(window).width()) * 360;
+            var distance = Math.abs(startEarthOrbit - newEarthOrbit);
+            var minDistance = 45;
+            var maxDistance = 180;
+            var minTime = 30;
+            var maxTime = 120;
+            if (distance < minDistance) {
+                Graphs.Drag.stepsLeft = minTime;
+            }
+            else if (distance > maxDistance) {
+                Graphs.Drag.stepsLeft = maxTime;
+            }
+            else {
+                Graphs.Drag.stepsLeft = (distance - minDistance) / (maxDistance - minDistance) * (maxTime - minTime) + minTime;
+            }
+            Graphs.Drag.newEarthOrbit = newEarthOrbit;
+            Graphs.Drag.active = true;
+        };
+        $handle.bind('mousedown', function() {
+            startEarthOrbit = Animate.getEarthOrbit();
+            Graphs.$monthMarker.addClass('draggable');
+        });
+        $body.bind('mouseup', function() {
+            if (!Graphs.$monthMarker.hasClass('draggable')) return;
+            finishDrag();
+            Graphs.$monthMarker.removeClass('draggable');
+        });
+        $body.bind('mousemove', function(e) {
+            if (!Graphs.$monthMarker.hasClass('draggable')) return;
+            Graphs.$monthMarker.css({left: e.pageX});
+            if (e.which !== 1) {
+                finishDrag();
+            }
+        });
+    };
+    this.Drag = {
+        active: false,
+        newEarthOrbit: 0,
+        stepsLeft: 0
     };
     var addSineOverlay = function() {
         var svg = document.getElementById('sineWave');

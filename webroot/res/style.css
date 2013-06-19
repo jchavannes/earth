@@ -6,6 +6,15 @@ body, html {
     font-family: "Comic Sans MS", sans-serif;
     font-size: 12px;
 }
+body:active {
+    cursor: pointer;
+}
+*::selection {
+    background: transparent;
+}
+*::-moz-selection {
+    background: black;
+}
 input[type=button] {
     font-family: "Comic Sans MS", sans-serif;
     font-size: 12px;
@@ -101,6 +110,15 @@ h2 {
     height: 45px;
     width: 2px;
     background: #f00;
+}
+.months .marker .handle {
+    position: absolute;
+    top: -15px;
+    left: -19px;
+    width: 40px;
+    height: 60px;
+    cursor: ew-resize;
+    border: none;
 }
 .orbit {
     background: url(imgs.png);
