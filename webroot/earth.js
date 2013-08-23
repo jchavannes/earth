@@ -1,3 +1,11 @@
+(function() {
+    var Init = function() {
+        if (!window.WebGLRenderingContext) {
+            alert('Your browser does not support WebGL');
+        }
+    };
+    $(Init);
+})();
 var Scene = new (function() {
     this.Obj = {};
     var pixelsPerKm = 0.05;
@@ -21,6 +29,8 @@ var Scene = new (function() {
         },
         timeMultiplier: 1, // 1 = real-time, 60 = 1 minute/sec, 3600 = 1 hour/sec
         moveObjects: true,
+        showStats: false,
+        showKeys: true,
         lockCameraToEarth: false,
         needsCameraReset: true,
         secondsInYear: 60 * 60 * 24 * 365 * 1000,
@@ -28,6 +38,7 @@ var Scene = new (function() {
         pixelsPerKm: pixelsPerKm
     };
     var Init = function() {
+        LS.loadDisplay();
         Scene.Scene = new THREE.Scene();
         Scene.Camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, settings.distance.earth * 1.5);
         Scene.Scene.add(Scene.Camera);
@@ -60,7 +71,7 @@ var Scene = new (function() {
 
         Scene.Renderer = new THREE.WebGLRenderer();
         Scene.Renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(Scene.Renderer.domElement);
+        $('body').prepend(Scene.Renderer.domElement);
     };
     var addEarth = function(radius, posX, posZ, img) {
         var geometry = new THREE.SphereGeometry(radius, 50, 50);
@@ -163,16 +174,36 @@ var Controls = new (function() {
         Scene.Obj.tropics.material.opacity = Scene.Obj.tropics.material.opacity == 0 ? 1 : 0;
         setButtonStatuses();
     };
+    this.toggleStats = function() {
+        Scene.settings.showStats = !Scene.settings.showStats;
+        Controls.checkDisplay();
+        LS.saveDisplay();
+        setButtonStatuses();
+    };
+    this.toggleKeys = function() {
+        Scene.settings.showKeys = !Scene.settings.showKeys;
+        Controls.checkDisplay();
+        LS.saveDisplay();
+        setButtonStatuses();
+    };
+    this.checkDisplay = function() {
+        $('.stats').css({display:Scene.settings.showStats ? "block" : "none"});
+        $('.keys').css({display:Scene.settings.showKeys ? "block" : "none"});
+    };
     var $lockButton
       , $playButton
       , $speedButton
       , $topicsButton
+      , $statsButton
+      , $keysButton
     ;
     var Init = function() {
         $lockButton = $('#lockButton');
         $playButton = $('#playButton');
         $speedButton = $('#speedButton');
         $topicsButton = $('#tropicsButton');
+        $statsButton = $('#statsButton');
+        $keysButton = $('#keysButton');
     };
     $(Init);
     var setButtonStatuses = this.setButtonStatuses = function() {
@@ -180,6 +211,8 @@ var Controls = new (function() {
         $playButton.val("Move Objects: " + (Scene.settings.moveObjects ? "On" : "Off"));
         $speedButton.val("Speed: " + (Scene.settings.timeMultiplier == 1 ? "Real-time" : (Scene.settings.timeMultiplier == 3600 ? "1 sec = 1 hour" : "1 sec = 1 day")));
         $topicsButton.val("Highlight Tropics: " + (Scene.Obj.tropics.material.opacity == 1 ? "On" : "Off"));
+        $statsButton.val("Show Info: " + (Scene.settings.showStats ? "On" : "Off"));
+        $keysButton.val("Show Controls: " + (Scene.settings.showKeys ? "On" : "Off"));
     };
 });
 var Animate = new (function() {
@@ -271,7 +304,7 @@ var Animate = new (function() {
         "2013-08-21 01:45:06",
         "2013-09-19 11:12:38",
         "2013-10-18 23:37:36",
-        "2013-11-17 15:16:30",
+        "2013-11-17 15:16:30"
     ];
     var updateObjects = function() {
         var hourToFrameRate = 108000 / Scene.settings.timeMultiplier;
@@ -378,12 +411,10 @@ var Graphs = new (function() {
         var yearStart = new Date(new Date().getFullYear(), 0, 0).getTime();
         var d = new Date((fraction / 360) * Scene.settings.secondsInYear + yearStart);
         d = d.toString().split(" ").splice(0,5);
-        d[4] = d[4].split(":").splice(0,2).join(":");
         $date.html(d.join(" ") + " PST");
     };
     var Init = function() {
         var $body = $('body');
-        $body.append("<div class='graphs'><div class='date'></div><div class='months'></div></div>");
         $date = $('.date');
         var $months = $('.months');
         var i, g
@@ -391,7 +422,7 @@ var Graphs = new (function() {
           , year = new Date().getYear()
           , daysInYear = getDaysInYear(year);
         for (i = 0; i < 12; i++) {
-            $months.append("<div data-month='" + (i + 1) + "'><span>&nbsp;" + monthText[i] + "</span></div>");
+            $months.prepend("<div data-month='" + (i + 1) + "'><span>&nbsp;" + monthText[i] + "</span></div>");
             $month = $("[data-month=" + (i + 1) + "]");
             daysInMonth = getDaysInMonth(i + 1, year);
             $month.css({width: (daysInMonth / daysInYear * 100) + "%"});
@@ -401,7 +432,6 @@ var Graphs = new (function() {
             width = 100 / daysInMonth;
             $month.find('p').css({width: width + "%"});
         }
-        $months.append("<svg id='sineWave' width='100%' height='120'></svg><div class='marker'><span class='handle'></span></div>");
         addSineOverlay();
         Graphs.$monthMarker = $('.marker');
         var $handle = Graphs.$monthMarker.find('.handle');
@@ -515,6 +545,19 @@ var LS = new (function() {
             Scene.settings.lockCameraToEarth = localStorage.lockCameraToEarth == "true";
         }
     };
+    this.saveDisplay = function() {
+        if (localStorage) {
+            localStorage.showStats = Scene.settings.showStats ? "true" : "false";
+            localStorage.showKeys = Scene.settings.showKeys ? "true" : "false";
+        }
+    };
+    this.loadDisplay = function() {
+        if (localStorage && localStorage.showStats) {
+            Scene.settings.showStats = localStorage.showStats == "true";
+            Scene.settings.showKeys = localStorage.showKeys !== "false";
+        }
+        Controls.checkDisplay();
+    };
     this.saveOrbits = function(moonOrbit, earthOrbit) {
         if (localStorage) {
             localStorage.orbits = JSON.stringify({
@@ -540,6 +583,7 @@ var LS = new (function() {
             localStorage.orbits = null;
             localStorage.lockCameraToEarth = null;
             localStorage.expire = null;
+            localStorage.showStats = null;
         }
     };
     if (!(localStorage && localStorage.expire && localStorage.expire > new Date().getTime())) {
