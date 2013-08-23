@@ -422,7 +422,7 @@ var Graphs = new (function() {
           , year = new Date().getYear()
           , daysInYear = getDaysInYear(year);
         for (i = 0; i < 12; i++) {
-            $months.prepend("<div data-month='" + (i + 1) + "'><span>&nbsp;" + monthText[i] + "</span></div>");
+            $months.append("<div data-month='" + (i + 1) + "'><span>&nbsp;" + monthText[i] + "</span></div>");
             $month = $("[data-month=" + (i + 1) + "]");
             daysInMonth = getDaysInMonth(i + 1, year);
             $month.css({width: (daysInMonth / daysInYear * 100) + "%"});
