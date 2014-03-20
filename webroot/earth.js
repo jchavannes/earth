@@ -326,7 +326,12 @@ var Animate = new (function() {
         }
         var lastFullMoon = new Date(phases[i-1]);
         moonOrbit = (now - lastFullMoon) / (nextFullMoon - lastFullMoon) * 360 + earthOrbit;
-        while (moonOrbit > 360) moonOrbit -= 360;
+        if (moonOrbit == Infinity) {
+            moonOrbit = 0;
+        }
+        else {
+            while (moonOrbit > 360) moonOrbit -= 360;
+        }
     };
     var phases = [
         "2013-01-27 04:40:28",
