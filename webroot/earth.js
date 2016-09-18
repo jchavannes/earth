@@ -6,6 +6,7 @@
     };
     $(Init);
 })();
+
 var Scene = new (function() {
     this.Obj = {};
     var pixelsPerKm = 0.05;
@@ -575,8 +576,9 @@ var Graphs = new (function() {
     };
     $(Init);
 });
-var LS = new (function() {
-    this.saveCamera = function() {
+var LS;
+(function() {
+    function saveCamera() {
         if (localStorage) {
             localStorage.camera = JSON.stringify({
                 posZ: Scene.Camera.position.z,
@@ -588,8 +590,8 @@ var LS = new (function() {
                 moveObjects: Scene.settings.moveObjects
             });
         }
-    };
-    this.loadCamera = function() {
+    }
+    function loadCamera() {
         if (localStorage && localStorage.camera) {
             try {
                 var camera = JSON.parse(localStorage.camera);
@@ -603,39 +605,39 @@ var LS = new (function() {
                 Scene.settings.moveObjects = camera.moveObjects;
             } catch(e) {}
         }
-    };
-    this.saveCameraLock = function() {
+    }
+    function saveCameraLock() {
         if (localStorage) {
             localStorage.lockCameraToEarth = Scene.settings.lockCameraToEarth ? "true" : "false";
         }
-    };
-    this.loadCameraLock = function() {
+    }
+    function loadCameraLock() {
         if (localStorage && localStorage.lockCameraToEarth) {
             Scene.settings.lockCameraToEarth = localStorage.lockCameraToEarth == "true";
         }
-    };
-    this.saveDisplay = function() {
+    }
+    function saveDisplay() {
         if (localStorage) {
             localStorage.showStats = Scene.settings.showStats ? "true" : "false";
             localStorage.showKeys = Scene.settings.showKeys ? "true" : "false";
         }
-    };
-    this.loadDisplay = function() {
+    }
+    function loadDisplay() {
         if (localStorage && localStorage.showStats) {
             Scene.settings.showStats = localStorage.showStats == "true";
             Scene.settings.showKeys = localStorage.showKeys !== "false";
         }
         Controls.checkDisplay();
-    };
-    this.saveOrbits = function(moonOrbit, earthOrbit) {
+    }
+    function saveOrbits(moonOrbit, earthOrbit) {
         if (localStorage) {
             localStorage.orbits = JSON.stringify({
                 moonOrbit: moonOrbit,
                 earthOrbit: earthOrbit
             });
         }
-    };
-    this.loadOrbits = function() {
+    }
+    function loadOrbits() {
         if (localStorage && localStorage.orbits) {
             try {
                 var orbits = JSON.parse(localStorage.orbits);
@@ -645,8 +647,8 @@ var LS = new (function() {
             } catch(e) {}
         }
         return false;
-    };
-    this.clearAll = function() {
+    }
+    function clearAll() {
         if (localStorage) {
             localStorage.camera = null;
             localStorage.orbits = null;
@@ -654,6 +656,16 @@ var LS = new (function() {
             localStorage.expire = null;
             localStorage.showStats = null;
         }
+    }
+    LS = {
+        saveCamera:     saveCamera,
+        loadCamera:     loadCamera,
+        saveCameraLock: saveCameraLock,
+        loadCameraLock: loadCameraLock,
+        saveDisplay:    saveDisplay,
+        loadDisplay:    loadDisplay,
+        saveOrbits:     saveOrbits,
+        loadOrbits:     loadOrbits
     };
     if (!(localStorage && localStorage.expire && localStorage.expire > new Date().getTime())) {
         this.clearAll();
@@ -661,14 +673,14 @@ var LS = new (function() {
     if (localStorage) {
         localStorage.expire = new Date().getTime() + 1000 * 60 * 60 * 6; // 6 hours
     }
-});
-Math.toRad = function(num) {
-    while (num > 360) num -= 360;
-    return num / 360 * 2 * Math.PI;
+})();
+Math.toRad = function(deg) {
+    while (deg > 360) deg -= 360;
+    return deg / 360 * 2 * Math.PI;
 };
-Math.toDeg = function(num) {
-    num %= 2 * Math.PI;
-    return num / (2 * Math.PI) * 360;
+Math.toDeg = function(rad) {
+    rad %= 2 * Math.PI;
+    return rad / (2 * Math.PI) * 360;
 };
 Number.prototype.withCommas = function() {
     return this.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
