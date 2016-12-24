@@ -668,7 +668,7 @@ var LS;
         loadOrbits:     loadOrbits
     };
     if (!(localStorage && localStorage.expire && localStorage.expire > new Date().getTime())) {
-        this.clearAll();
+        clearAll();
     }
     if (localStorage) {
         localStorage.expire = new Date().getTime() + 1000 * 60 * 60 * 6; // 6 hours
