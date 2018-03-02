@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <html lang="en">
 <head>
-    <title>The Earth</title>
+    <title>Space</title>
     <meta charset="utf-8">
     <meta name="author" content="Jason Chavannes <jason.chavannes@gmail.com>" />
     <meta name="date" content="5/4/2013" />
@@ -26,14 +26,94 @@
         <div class='marker'><span class='handle'></span></div>
     </div>
     <div class="keys">
-        <h2>Use Your Keyboard to Move Around</h2>
-        <p>
-            <i>(requires desktop device)</i>
-        </p>
-        <img src="res/controls.png" />
-        <p><span>Rotate &amp; Move</span><span>Strafe</span></p>
-        <p><a onclick="Controls.toggleKeys();return false;" href="">Click Here to Hide</a></p>
+        <div class="tutorial" id="tutorial-1">
+            <h2>About</h2>
+            <p>
+                Right now you are hovering in space locked to the Sun, unaffected by Earth's gravity.
+            </p>
+            <p>
+                If you look closely, you will notice the Earth is slowly moving to the left.
+                This is the Earth in orbit around the Sun.
+            </p>
+            <p>
+                Everything is to scale, this is the speed the Earth moves around the Sun -
+                about 30 km per second - which is really fast.
+                If you watch long enough, the Earth will eventually be completely off the screen.
+            </p>
+            <p>
+                At a diameter of 12,742 km, it takes the Earth a little over 7 minutes to travel its width in distance,
+                which is about how long it will take to move off the screen.
+            </p>
+            <p>
+                Click the <b>Next</b> button below to learn more.
+            </p>
+            <p>
+                If you hide this tutorial, you can display it again by
+                clicking the <b>Show Controls</b> button at the top of the screen.
+            </p>
+            <hr/>
+            <p>
+                <a onclick="tutorialPart2();return false;" href="">Next</a> |
+                <a onclick="Controls.toggleKeys();return false;" href="">Hide</a>
+            </p>
+        </div>
+        <div class="tutorial" id="tutorial-2">
+            <h2>About (Part 2)</h2>
+            <p>
+                At the top there are buttons to help navigate this simulation.
+            </p>
+            <p>
+                When the Earth is getting away, click the <b>Back to Earth</b> button.
+            </p>
+            <p>
+                If you don't want the Earth to move away, click the <b>Lock to Earth</b> button.
+            </p>
+            <hr/>
+            <p>
+                <a onclick="tutorialPart1();return false;" href="">Prev</a> |
+                <a onclick="tutorialPart3();return false;" href="">Next</a> |
+                <a onclick="Controls.toggleKeys();return false;" href="">Hide</a>
+            </p>
+        </div>
+        <div class="tutorial" id="tutorial-3">
+            <h2>Use Your Keyboard to Move Around</h2>
+            <p>
+                <i>(requires desktop device)</i>
+            </p>
+            <div style="display:block; width:500px; margin:0 auto;">
+                <img src="res/controls.png" />
+                <p><span>Rotate &amp; Move</span><span>Strafe</span></p>
+            </div>
+            <hr/>
+            <p>
+                <a onclick="tutorialPart2();return false;" href="">Prev</a> |
+                <a onclick="tutorialPart1();return false;" href="">Restart</a> |
+                <a onclick="Controls.toggleKeys();return false;" href="">Hide</a>
+            </p>
+        </div>
     </div>
+    <script type="text/javascript">
+        function tutorialPart1() {
+            localStorage.tutorial = 1;
+            loadTutorial();
+        }
+        function tutorialPart2() {
+            localStorage.tutorial = 2;
+            loadTutorial();
+        }
+        function tutorialPart3() {
+            localStorage.tutorial = 3;
+            loadTutorial();
+        }
+        function loadTutorial() {
+            if (localStorage.tutorial == null) {
+                localStorage.tutorial = 1;
+            }
+            $(".tutorial").hide();
+            $("#tutorial-" + localStorage.tutorial).show();
+        }
+        $(loadTutorial);
+    </script>
     <div class="stats">
         <h2>Space Simulation</h2>
         <table class="description" border="1">
@@ -77,7 +157,7 @@
         <input type="button" id="tropicsButton" onclick="Controls.highlightTropics();" value="Highlight Tropics" />
         <input type="button" id="keysButton" onclick="Controls.toggleKeys();" value="Show Controls" />
         <input type="button" id="statsButton" onclick="Controls.toggleStats();" value="Show Info" />
-        <div style="padding:5px;">Distance from earth: <span id="cameraFromEarth"></span></div>
+        <div style="padding:5px;">Distance from Earth: <span id="cameraFromEarth"></span></div>
     </div>
     <script type="text/javascript">
         var _gaq = _gaq || [];

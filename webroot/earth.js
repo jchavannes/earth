@@ -69,7 +69,7 @@ var Scene = new (function() {
         LS.loadCameraLock();
         LS.loadDisplay();
 
-        Scene.Scene.add(new THREE.PointLight(0xffffff, 1.15)); // Sunlight
+        Scene.Scene.add(new THREE.PointLight(0xffffff, 1.5)); // Sunlight
         Scene.Scene.add(new THREE.AmbientLight(0x111111)); // Ambient
 
         var stars = new THREE.Geometry();
@@ -377,7 +377,10 @@ var Animate = new (function() {
         Scene.Obj.earth.position.x = Scene.measure.distance.earth * vectorX(earthOrbit);
         Scene.Obj.earth.position.z = Scene.measure.distance.earth * vectorZ(earthOrbit);
         Scene.Obj.earth.rotation.y = Math.toRad(earthOrbit) * Scene.measure.orbit.earth * 24 / Scene.measure.rotation.earth;
-        Scene.Obj.tropics.position = Scene.Obj.earth.position;
+        Scene.Obj.tropics.position.x = Scene.Obj.earth.position.x;
+        Scene.Obj.tropics.position.z = Scene.Obj.earth.position.z;
+        Scene.Obj.tropics.rotation.y = Scene.Obj.earth.rotation.y;
+
         if (Scene.settings.lockCameraToEarth) {
             Scene.Camera.position.x -= startX - Scene.Obj.earth.position.x;
             Scene.Camera.position.z -= startZ - Scene.Obj.earth.position.z;
@@ -655,9 +658,11 @@ var LS;
             localStorage.lockCameraToEarth = null;
             localStorage.expire = null;
             localStorage.showStats = null;
+            localStorage.showKeys = null;
         }
     }
     LS = {
+        clearAll:       clearAll,
         saveCamera:     saveCamera,
         loadCamera:     loadCamera,
         saveCameraLock: saveCameraLock,

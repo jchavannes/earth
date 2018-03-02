@@ -43,8 +43,9 @@ canvas {
 }
 .keys {
     position: fixed;
-    top: 50%;
+    top: 40%;
     left: 50%;
+    width: 500px;
     margin-top: -170px;
     margin-left: -256px;
     background: rgba(0,0,0,0.7);
@@ -235,4 +236,8 @@ h2 {
     right: 5px;
     top: 92px;
     text-align: right;
+}
+
+.tutorial {
+    display: none;
 }
